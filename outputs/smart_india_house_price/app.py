@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 import json
 import math
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -15,6 +16,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils.browser_storage import browser_history
+from utils.email_utils import EmailDeliveryError, send_valuation_email
 from utils.nearby_utils import find_market_comparables, get_market_statistics
 from utils.price_utils import format_price, format_price_per_sqft
 from utils.ui_utils import (
@@ -33,6 +35,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_PATH = BASE_DIR / "data" / "india_housing.csv"
 MODEL_PATH = BASE_DIR / "models" / "best_model.joblib"
 METADATA_PATH = BASE_DIR / "models" / "model_metadata.json"
+EMAIL_COOLDOWN_SECONDS = 60
 
 st.set_page_config(
     page_title="GharMulyankan | Property Valuation",
@@ -337,8 +340,63 @@ if st.button("Save this valuation", type="primary", use_container_width=True):
     st.toast("Valuation saved only in this browser's History", icon="✅")
 
 
+# Optional email delivery. The recipient address is not added to saved history.
+section_header("05", "Email this valuation", "Send the current result as a private report")
+with st.container(border=True):
+    st.markdown(
+        '<div class="tiny-note">Enter the address that should receive this valuation. '
+        "The address is used for delivery only and is not saved in this app.</div>",
+        unsafe_allow_html=True,
+    )
+    with st.form("email_valuation_report", clear_on_submit=True):
+        report_email = st.text_input(
+            "Email address",
+            placeholder="name@example.com",
+            autocomplete="email",
+        )
+        send_report = st.form_submit_button(
+            "Send valuation report",
+            type="primary",
+            use_container_width=True,
+        )
+
+    if send_report:
+        now = time.time()
+        last_sent_at = float(st.session_state.get("last_report_email_at", 0.0))
+        wait_seconds = EMAIL_COOLDOWN_SECONDS - int(now - last_sent_at)
+        if wait_seconds > 0:
+            st.warning(f"Please wait {wait_seconds} seconds before sending another report.")
+        else:
+            email_report = {
+                "location": locality_name,
+                "city": city_name,
+                "area": area,
+                "bhk": bhk,
+                "bathrooms": bathrooms,
+                "parking": parking,
+                "property_age": property_age,
+                "furnishing": furnishing,
+                "property_type": property_type,
+                "predicted_price": predicted_price,
+                "nearby_average_price": market["average_price"],
+                "nearby_price_per_sqft": market["price_per_sqft"],
+                "houses_found": market["houses_found"],
+                "annual_growth_rate": growth_rate,
+                "projected_price_5y": price_5_years,
+                "projected_price_10y": price_10_years,
+            }
+            try:
+                with st.spinner("Sending your valuation report..."):
+                    send_valuation_email(report_email, email_report)
+            except EmailDeliveryError as error:
+                st.error(str(error))
+            else:
+                st.session_state["last_report_email_at"] = now
+                st.success("Valuation report sent. Please check the inbox and spam folder.")
+
+
 # Evidence table
-section_header("05", "Comparable evidence", "Only real listing rows are shown")
+section_header("06", "Comparable evidence", "Only real listing rows are shown")
 with st.container(border=True):
     if nearby.empty:
         st.info("No comparable rows are available in this city market.")
