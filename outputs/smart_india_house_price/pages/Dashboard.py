@@ -12,8 +12,10 @@ from utils.browser_storage import browser_history
 from utils.price_utils import format_price
 from utils.ui_utils import (
     apply_page_style,
+    complete_loading_shell,
     section_header,
     show_hero,
+    show_loading_shell,
     show_sidebar,
     style_plotly,
 )
@@ -41,13 +43,32 @@ show_hero(
     "Live dataset intelligence",
     ["Filter by city", "Real listing records", "Interactive charts"],
 )
+dashboard_loading = show_loading_shell(
+    "Loading market intelligence",
+    "Reading listing coverage and preparing dashboard filters.",
+)
 
 if not DATA_PATH.exists():
+    dashboard_loading.empty()
     st.error("Dataset is missing. Add data/india_housing.csv and run python train_model.py.")
     st.stop()
 
-data = load_data()
-saved_records = browser_history(component_key="dashboard_browser_history")
+try:
+    data = load_data()
+except Exception as error:
+    dashboard_loading.empty()
+    st.error(f"Market data could not be loaded: {error}")
+    st.stop()
+
+saved_records, browser_history_ready = browser_history(
+    component_key="dashboard_browser_history",
+    include_status=True,
+)
+complete_loading_shell(
+    dashboard_loading,
+    "Market data ready",
+    f"{len(data):,} real listing rows are available for exploration.",
+)
 
 with st.container(border=True):
     filter_left, filter_right = st.columns([1.2, 2.2], gap="large")
@@ -69,7 +90,10 @@ one, two, three, four = st.columns(4)
 one.metric("Visible listings", f"{len(view_data):,}")
 two.metric("Localities covered", f"{view_data['location'].nunique():,}")
 three.metric("Median asking price", format_price(float(view_data["price"].median())))
-four.metric("This browser's saves", len(saved_records))
+four.metric(
+    "This browser's saves",
+    len(saved_records) if browser_history_ready else "Syncing...",
+)
 
 section_header("01", "Explore the training market", "Coverage and price distribution")
 chart_left, chart_right = st.columns(2, gap="large")
