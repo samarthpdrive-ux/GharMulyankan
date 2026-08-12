@@ -5,14 +5,16 @@ from __future__ import annotations
 import html
 import json
 import math
+from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
 
 import joblib
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from database import init_database, save_prediction
+from utils.browser_storage import browser_history
 from utils.nearby_utils import find_market_comparables, get_market_statistics
 from utils.price_utils import format_price, format_price_per_sqft
 from utils.ui_utils import (
@@ -39,7 +41,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 apply_page_style()
-init_database()
 
 
 @st.cache_data(show_spinner=False)
@@ -66,7 +67,7 @@ def future_price(current_price: float, annual_rate: float, years: int) -> float:
 
 
 def optional_number(value: float) -> float | None:
-    """Convert a missing coordinate to a SQLite NULL."""
+    """Convert a missing coordinate to a JSON-compatible null value."""
     return None if pd.isna(value) or not math.isfinite(float(value)) else float(value)
 
 
@@ -303,8 +304,14 @@ longitude = (
 )
 
 if st.button("Save this valuation", type="primary", use_container_width=True):
-    record_id = save_prediction(
-        {
+    record_id = uuid4().hex[:10]
+    browser_history(
+        component_key="valuation_browser_history",
+        action="append",
+        action_id=uuid4().hex,
+        record={
+            "id": record_id,
+            "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "location": locality_name,
             "city": city_name,
             "latitude": latitude,
@@ -325,9 +332,9 @@ if st.button("Save this valuation", type="primary", use_container_width=True):
             "projected_price_5y": price_5_years,
             "projected_price_10y": price_10_years,
             "model_name": metadata["selected_model"],
-        }
+        },
     )
-    st.toast(f"Valuation #{record_id} saved to History", icon="✅")
+    st.toast("Valuation saved only in this browser's History", icon="✅")
 
 
 # Evidence table
