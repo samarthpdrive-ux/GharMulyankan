@@ -1,12 +1,14 @@
-"""Saved SQLite prediction history page."""
+"""Prediction history stored privately in the visitor's browser."""
 
 from __future__ import annotations
+
+from uuid import uuid4
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from database import get_prediction_history, init_database
+from utils.browser_storage import browser_history
 from utils.price_utils import format_price
 from utils.ui_utils import (
     apply_page_style,
@@ -19,32 +21,52 @@ from utils.ui_utils import (
 
 st.set_page_config(page_title="History | GharMulyankan", page_icon="🕘", layout="wide")
 apply_page_style()
-init_database()
 
 show_sidebar(
     "Valuation library",
-    "Review, filter, and export the property estimates you deliberately saved.",
+    "Review, filter, and export estimates stored only in this browser profile.",
 )
 show_hero(
     "Your valuation library, organised.",
-    "Return to earlier estimates, compare saved outcomes, and export your records whenever you need them.",
-    "Private local history",
-    ["Stored in SQLite", "Filter by market", "Export to CSV"],
+    "Return to estimates saved in this browser, compare outcomes, and export your own records whenever you need them.",
+    "Private browser history",
+    ["Stored on this device", "Not stored on Render", "Export to CSV"],
 )
 
-history = get_prediction_history()
+saved_records = browser_history(component_key="history_browser_storage")
+history = pd.DataFrame(saved_records)
 if history.empty:
     st.markdown(
         """
         <div class="empty-state">
             <div class="empty-icon">＋</div>
             <div class="empty-title">Your valuation library is empty</div>
-            <div class="empty-copy">Create an estimate on the main valuation page and choose “Save this valuation”. It will appear here automatically.</div>
+            <div class="empty-copy">Create an estimate on the main valuation page and choose “Save this valuation”. It will be stored only in this browser profile.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+    st.caption("Browser history stays on this device and is not stored on the Render server.")
     st.stop()
+
+required_columns = [
+    "id",
+    "created_at",
+    "city",
+    "location",
+    "area",
+    "bhk",
+    "bathrooms",
+    "property_type",
+    "predicted_price",
+    "projected_price_5y",
+    "projected_price_10y",
+    "annual_growth_rate",
+    "houses_found",
+    "comparison_scope",
+    "model_name",
+]
+history = history.reindex(columns=required_columns)
 
 with st.container(border=True):
     filter_left, filter_right = st.columns([1.1, 2.2], gap="large")
@@ -86,26 +108,8 @@ figure.update_traces(line_width=3, marker_size=8)
 with st.container(border=True):
     st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
 
-section_header("02", "All saved records", "Stored locally in SQLite")
-display = visible_history[
-    [
-        "id",
-        "created_at",
-        "city",
-        "location",
-        "area",
-        "bhk",
-        "bathrooms",
-        "property_type",
-        "predicted_price",
-        "projected_price_5y",
-        "projected_price_10y",
-        "annual_growth_rate",
-        "houses_found",
-        "comparison_scope",
-        "model_name",
-    ]
-].copy()
+section_header("02", "All saved records", "Stored only in this browser profile")
+display = visible_history[required_columns].copy()
 display.columns = [
     "ID",
     "Saved at",
@@ -144,7 +148,16 @@ st.download_button(
     use_container_width=True,
 )
 
+if st.button("Clear this browser's history", use_container_width=True):
+    browser_history(
+        component_key="history_browser_clear",
+        action="clear",
+        action_id=uuid4().hex,
+    )
+    st.toast("History cleared from this browser", icon="✅")
+
 st.markdown(
-    '<div class="app-footer">Saved records stay in the local SQLite database on this computer.</div>',
+    '<div class="app-footer">Saved records stay in this browser profile. They are not '
+    "written to Render or shared with other visitors.</div>",
     unsafe_allow_html=True,
 )
