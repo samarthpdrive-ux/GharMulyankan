@@ -141,8 +141,14 @@ def send_valuation_email(recipient: str, report: dict[str, Any]) -> None:
         with urlopen(request, timeout=15) as response:
             status_code = response.status
     except HTTPError as exc:
+        try:
+            error_body = json.loads(exc.read().decode("utf-8", errors="replace"))
+            brevo_message = str(error_body.get("message", "Request rejected"))
+        except (json.JSONDecodeError, AttributeError, OSError):
+            brevo_message = "Request rejected"
         raise EmailDeliveryError(
-            "The email service rejected the request. Check the Brevo API key and verified sender."
+            f"Brevo rejected the email (HTTP {exc.code}): {brevo_message}. "
+            "Check the API key and verified sender email."
         ) from exc
     except URLError as exc:
         raise EmailDeliveryError(
