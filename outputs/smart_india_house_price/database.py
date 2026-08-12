@@ -1,4 +1,8 @@
-"""SQLite helper functions for saved property valuations."""
+"""Optional SQLite helpers retained for classroom demonstration.
+
+The deployed Streamlit pages use per-browser local storage instead, so this
+module is not imported by the live app and does not store visitor history.
+"""
 
 from __future__ import annotations
 
