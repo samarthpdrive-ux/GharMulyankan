@@ -1,0 +1,155 @@
+"""Send a valuation report without storing the recipient's email address."""
+
+from __future__ import annotations
+
+import html
+import json
+import os
+import re
+from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
+from utils.price_utils import format_price, format_price_per_sqft
+
+
+BREVO_EMAIL_URL = "https://api.brevo.com/v3/smtp/email"
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
+class EmailDeliveryError(RuntimeError):
+    """Raised when email settings are missing or delivery fails."""
+
+
+def _setting(name: str, default: str = "") -> str:
+    """Read a secret from an environment variable or Streamlit secrets."""
+    environment_value = os.getenv(name, "").strip()
+    if environment_value:
+        return environment_value
+
+    try:
+        import streamlit as st
+
+        secret_value = st.secrets.get(name, default)
+    except Exception:
+        secret_value = default
+    return str(secret_value).strip()
+
+
+def is_valid_email(value: str) -> bool:
+    """Perform a small server-side email format check."""
+    return bool(EMAIL_PATTERN.fullmatch(value.strip()))
+
+
+def _safe(value: Any) -> str:
+    """Escape user-controlled values before inserting them into HTML."""
+    return html.escape(str(value if value is not None else "Not available"))
+
+
+def _build_report_html(report: dict[str, Any]) -> str:
+    """Create a compact HTML email from the current valuation result."""
+    current_price = format_price(float(report["predicted_price"]))
+    price_5y = format_price(float(report["projected_price_5y"]))
+    price_10y = format_price(float(report["projected_price_10y"]))
+    nearby_average = format_price(float(report["nearby_average_price"]))
+    nearby_rate = format_price_per_sqft(float(report["nearby_price_per_sqft"]))
+
+    return f"""
+    <!doctype html>
+    <html>
+      <body style="margin:0;background:#f3f5fa;font-family:Arial,sans-serif;color:#141a2a">
+        <div style="max-width:640px;margin:24px auto;padding:0 14px">
+          <div style="background:#0d1427;color:white;border-radius:18px;padding:28px">
+            <div style="font-size:12px;letter-spacing:1.2px;color:#b9b5ff">GHARMULYANKAN</div>
+            <h1 style="margin:10px 0 6px;font-size:25px">Property valuation report</h1>
+            <div style="color:#aeb7cf">{_safe(report['location'])}, {_safe(report['city'])}</div>
+            <div style="margin-top:24px;font-size:12px;color:#aeb7cf">ESTIMATED CURRENT VALUE</div>
+            <div style="margin-top:5px;font-size:36px;font-weight:700">{_safe(current_price)}</div>
+          </div>
+
+          <div style="margin-top:14px;background:white;border:1px solid #e5e8f1;border-radius:16px;padding:22px">
+            <h2 style="margin:0 0 14px;font-size:18px">Property details</h2>
+            <table style="width:100%;border-collapse:collapse;font-size:14px">
+              <tr><td style="padding:7px 0;color:#6d7588">Area</td><td style="text-align:right">{_safe(report['area'])} sq.ft</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">Bedrooms / BHK</td><td style="text-align:right">{_safe(report['bhk'])}</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">Bathrooms</td><td style="text-align:right">{_safe(report['bathrooms'])}</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">Parking</td><td style="text-align:right">{_safe(report['parking'])}</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">Property age</td><td style="text-align:right">{_safe(report['property_age'])} years</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">Furnishing</td><td style="text-align:right">{_safe(report['furnishing'])}</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">Property type</td><td style="text-align:right">{_safe(report['property_type'])}</td></tr>
+            </table>
+          </div>
+
+          <div style="margin-top:14px;background:white;border:1px solid #e5e8f1;border-radius:16px;padding:22px">
+            <h2 style="margin:0 0 14px;font-size:18px">Market evidence and outlook</h2>
+            <table style="width:100%;border-collapse:collapse;font-size:14px">
+              <tr><td style="padding:7px 0;color:#6d7588">Comparable average</td><td style="text-align:right">{_safe(nearby_average)}</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">Comparable rate</td><td style="text-align:right">{_safe(nearby_rate)}</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">Listings analysed</td><td style="text-align:right">{_safe(report['houses_found'])}</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">5-year scenario</td><td style="text-align:right">{_safe(price_5y)}</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">10-year scenario</td><td style="text-align:right">{_safe(price_10y)}</td></tr>
+              <tr><td style="padding:7px 0;color:#6d7588">Growth assumption</td><td style="text-align:right">{float(report['annual_growth_rate']):.1f}% per year</td></tr>
+            </table>
+          </div>
+
+          <p style="padding:8px 4px;color:#7c8497;font-size:12px;line-height:1.5">
+            This is an educational model estimate, not a guaranteed sale price. Future values are
+            what-if scenarios based on the selected annual growth rate and should be verified locally.
+          </p>
+        </div>
+      </body>
+    </html>
+    """
+
+
+def send_valuation_email(recipient: str, report: dict[str, Any]) -> None:
+    """Send one valuation through Brevo's HTTPS API.
+
+    The API key remains on the server. The recipient address is sent to Brevo
+    for delivery but is not written to this application's database or history.
+    """
+    recipient = recipient.strip().lower()
+    if not is_valid_email(recipient):
+        raise EmailDeliveryError("Enter a valid email address.")
+
+    api_key = _setting("BREVO_API_KEY")
+    sender_email = _setting("BREVO_SENDER_EMAIL")
+    sender_name = _setting("BREVO_SENDER_NAME", "GharMulyankan")
+    if not api_key or not sender_email:
+        raise EmailDeliveryError(
+            "Email delivery is not configured. Add BREVO_API_KEY and "
+            "BREVO_SENDER_EMAIL to the server environment."
+        )
+
+    payload = {
+        "sender": {"name": sender_name, "email": sender_email},
+        "to": [{"email": recipient}],
+        "subject": f"Your property valuation - {report['location']}",
+        "htmlContent": _build_report_html(report),
+    }
+    request = Request(
+        BREVO_EMAIL_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=15) as response:
+            status_code = response.status
+    except HTTPError as exc:
+        raise EmailDeliveryError(
+            "The email service rejected the request. Check the Brevo API key and verified sender."
+        ) from exc
+    except URLError as exc:
+        raise EmailDeliveryError(
+            "The email service could not be reached. Try again shortly."
+        ) from exc
+
+    if status_code != 201:
+        raise EmailDeliveryError(
+            "The email service rejected the request. Check the Brevo API key and verified sender."
+        )
