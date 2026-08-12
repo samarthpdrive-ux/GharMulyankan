@@ -67,22 +67,29 @@ _history_storage = st.components.v2.component(
                 setStateValue("records", records);
             }
 
+            if (!data.current_ready) {
+                setStateValue("ready", true);
+            }
+
             status.textContent = String(records.length);
         }
     """,
 )
 
 
-def _records_from_component_state(component_key: str) -> list[dict[str, Any]]:
+def _component_state(component_key: str) -> tuple[list[dict[str, Any]], bool]:
     """Read the latest component value already available in Session State."""
     state = st.session_state.get(component_key)
     if state is None:
-        return []
+        return [], False
 
     records = state.get("records", []) if isinstance(state, dict) else getattr(
         state, "records", []
     )
-    return records if isinstance(records, list) else []
+    ready = state.get("ready", False) if isinstance(state, dict) else getattr(
+        state, "ready", False
+    )
+    return (records if isinstance(records, list) else []), bool(ready)
 
 
 def browser_history(
@@ -91,9 +98,10 @@ def browser_history(
     action: str = "read",
     record: dict[str, Any] | None = None,
     action_id: str | None = None,
-) -> list[dict[str, Any]]:
+    include_status: bool = False,
+) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], bool]:
     """Read, append to, or clear history stored in this browser profile."""
-    current_records = _records_from_component_state(component_key)
+    current_records, current_ready = _component_state(component_key)
     result = _history_storage(
         data={
             "storage_key": STORAGE_KEY,
@@ -101,12 +109,16 @@ def browser_history(
             "record": record,
             "action_id": action_id,
             "current_records": current_records,
+            "current_ready": current_ready,
             "max_records": MAX_RECORDS,
         },
-        default={"records": current_records},
+        default={"records": current_records, "ready": current_ready},
         on_records_change=lambda: None,
+        on_ready_change=lambda: None,
         key=component_key,
         height=1,
     )
     records = getattr(result, "records", current_records)
-    return records if isinstance(records, list) else current_records
+    ready = bool(getattr(result, "ready", current_ready))
+    safe_records = records if isinstance(records, list) else current_records
+    return (safe_records, ready) if include_status else safe_records
