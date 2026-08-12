@@ -1,0 +1,932 @@
+{
+  "A Block Sushant Lok Phase - 3|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "A Block Sushant Lok Phase - 3, Gurgaon, India"
+  },
+  "A Block Sushant Lok Phase 1|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "A Block Sushant Lok Phase 1, Gurgaon, India"
+  },
+  "Ambience|Gurgaon": {
+    "latitude": 28.5007796,
+    "longitude": 77.102441,
+    "query": "Ambience, Gurgaon, India"
+  },
+  "Ansal Plaza|Gurgaon": {
+    "latitude": 28.511342,
+    "longitude": 77.0417054,
+    "query": "Ansal Plaza, Gurgaon, India"
+  },
+  "Ardee City|Gurgaon": {
+    "latitude": 28.4410412,
+    "longitude": 77.0792079,
+    "query": "Ardee City, Gurgaon, India"
+  },
+  "B Block Sushant Lok Phase 1|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "B Block Sushant Lok Phase 1, Gurgaon, India"
+  },
+  "Block B Sector 2 Palam Vihar|Gurgaon": {
+    "latitude": 28.484711,
+    "longitude": 77.0273173,
+    "query": "Block B Sector 2 Palam Vihar, Gurgaon, India"
+  },
+  "Block B Sushant Lok Phase - 3|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Block B Sushant Lok Phase - 3, Gurgaon, India"
+  },
+  "Block C Ardee City|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Block C Ardee City, Gurgaon, India"
+  },
+  "Block C Greenwood City|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Block C Greenwood City, Gurgaon, India"
+  },
+  "Block C Palam Vihar|Gurgaon": {
+    "latitude": 28.4829959,
+    "longitude": 77.0333555,
+    "query": "Block C Palam Vihar, Gurgaon, India"
+  },
+  "Block C Sushant Lok Phase - 3|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Block C Sushant Lok Phase - 3, Gurgaon, India"
+  },
+  "Block D New Palam Vihar Phase 2|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Block D New Palam Vihar Phase 2, Gurgaon, India"
+  },
+  "Block F, Sushant Lok Phase - 2|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Block F, Sushant Lok Phase - 2, Gurgaon, India"
+  },
+  "Block K South City 1|Gurgaon": {
+    "latitude": 28.4521251,
+    "longitude": 77.0631645,
+    "query": "Block K South City 1, Gurgaon, India"
+  },
+  "Block M Dlf Phase 2|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Block M Dlf Phase 2, Gurgaon, India"
+  },
+  "Block M South City 1|Gurgaon": {
+    "latitude": 28.4538821,
+    "longitude": 77.0626859,
+    "query": "Block M South City 1, Gurgaon, India"
+  },
+  "Block N, Mayfield Garden|Gurgaon": {
+    "latitude": 28.4263326,
+    "longitude": 77.0619263,
+    "query": "Block N, Mayfield Garden, Gurgaon, India"
+  },
+  "Block-A, Dlf City Phase 1|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Block-A, Dlf City Phase 1, Gurgaon, India"
+  },
+  "C Block Mayfield Garden|Gurgaon": {
+    "latitude": 28.4225252,
+    "longitude": 77.0612084,
+    "query": "C Block Mayfield Garden, Gurgaon, India"
+  },
+  "C Block Pocket I Mayfield Garden|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "C Block Pocket I Mayfield Garden, Gurgaon, India"
+  },
+  "C Block Sushant Lok Phase 1|Gurgaon": {
+    "latitude": 28.4545693,
+    "longitude": 77.0826249,
+    "query": "C Block Sushant Lok Phase 1, Gurgaon, India"
+  },
+  "Chakkarpur|Gurgaon": {
+    "latitude": 28.4715202,
+    "longitude": 77.0913233,
+    "query": "Chakkarpur, Gurgaon, India"
+  },
+  "Civil Lines|Gurgaon": {
+    "latitude": 28.4616851,
+    "longitude": 77.0339023,
+    "query": "Civil Lines, Gurgaon, India"
+  },
+  "Cyber City|Gurgaon": {
+    "latitude": 28.4980703,
+    "longitude": 77.0892567,
+    "query": "Cyber City, Gurgaon, India"
+  },
+  "D Block Sushant Lok Phase 1|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "D Block Sushant Lok Phase 1, Gurgaon, India"
+  },
+  "Dayanand Colony|Gurgaon": {
+    "latitude": 28.4728756,
+    "longitude": 77.0220042,
+    "query": "Dayanand Colony, Gurgaon, India"
+  },
+  "Dlf City|Gurgaon": {
+    "latitude": 28.4640865,
+    "longitude": 77.0836441,
+    "query": "Dlf City, Gurgaon, India"
+  },
+  "Dlf Phase 1|Gurgaon": {
+    "latitude": 28.4765171,
+    "longitude": 77.090194,
+    "query": "Dlf Phase 1, Gurgaon, India"
+  },
+  "Dlf Phase 2|Gurgaon": {
+    "latitude": 28.483901,
+    "longitude": 77.0846097,
+    "query": "Dlf Phase 2, Gurgaon, India"
+  },
+  "Dlf Phase 3|Gurgaon": {
+    "latitude": 28.4919048,
+    "longitude": 77.0937804,
+    "query": "Dlf Phase 3, Gurgaon, India"
+  },
+  "Dlf Phase 4|Gurgaon": {
+    "latitude": 28.4919048,
+    "longitude": 77.0937804,
+    "query": "Dlf Phase 4, Gurgaon, India"
+  },
+  "Dlf Phase 5|Gurgaon": {
+    "latitude": 28.503445,
+    "longitude": 77.0952048,
+    "query": "Dlf Phase 5, Gurgaon, India"
+  },
+  "Dwarka Expressway Gurgaon|Gurgaon": {
+    "latitude": 28.4973297,
+    "longitude": 77.0039636,
+    "query": "Dwarka Expressway Gurgaon, Gurgaon, India"
+  },
+  "Golf Course Ext Road|Gurgaon": {
+    "latitude": 28.4007315,
+    "longitude": 77.0242312,
+    "query": "Golf Course Ext Road, Gurgaon, India"
+  },
+  "Greenwood City|Gurgaon": {
+    "latitude": 28.4449095,
+    "longitude": 77.0611408,
+    "query": "Greenwood City, Gurgaon, India"
+  },
+  "Gurgaon|Gurgaon": {
+    "latitude": 28.4890874,
+    "longitude": 77.0111572,
+    "query": "Gurgaon, Gurgaon, India"
+  },
+  "Gwal Pahari|Gurgaon": {
+    "latitude": 28.4326344,
+    "longitude": 77.1480585,
+    "query": "Gwal Pahari, Gurgaon, India"
+  },
+  "Heritage City|Gurgaon": {
+    "latitude": 28.4817226,
+    "longitude": 77.0784621,
+    "query": "Heritage City, Gurgaon, India"
+  },
+  "Kadarpur|Gurgaon": {
+    "latitude": 28.3921393,
+    "longitude": 77.061002,
+    "query": "Kadarpur, Gurgaon, India"
+  },
+  "Laxman Vihar|Gurgaon": {
+    "latitude": 28.666142,
+    "longitude": 77.3199276,
+    "query": "Laxman Vihar, Gurgaon, India"
+  },
+  "Malibu Town|Gurgaon": {
+    "latitude": 28.4234344,
+    "longitude": 77.0468649,
+    "query": "Malibu Town, Gurgaon, India"
+  },
+  "Mayfield Garden|Gurgaon": {
+    "latitude": 28.4227493,
+    "longitude": 77.0705636,
+    "query": "Mayfield Garden, Gurgaon, India"
+  },
+  "Mg Road|Gurgaon": {
+    "latitude": 28.4769607,
+    "longitude": 77.0662688,
+    "query": "Mg Road, Gurgaon, India"
+  },
+  "New Golf Course Ext Road|Gurgaon": {
+    "latitude": 28.3950687,
+    "longitude": 77.0314323,
+    "query": "New Golf Course Ext Road, Gurgaon, India"
+  },
+  "New Gurgaon|Gurgaon": {
+    "latitude": 28.4671681,
+    "longitude": 77.018953,
+    "query": "New Gurgaon, Gurgaon, India"
+  },
+  "New Palam Vihar|Gurgaon": {
+    "latitude": 28.4868613,
+    "longitude": 77.019042,
+    "query": "New Palam Vihar, Gurgaon, India"
+  },
+  "Nirvana Country|Gurgaon": {
+    "latitude": 28.4150509,
+    "longitude": 77.0642955,
+    "query": "Nirvana Country, Gurgaon, India"
+  },
+  "Palam Vihar|Gurgaon": {
+    "latitude": 28.4983353,
+    "longitude": 77.0203007,
+    "query": "Palam Vihar, Gurgaon, India"
+  },
+  "Palam Vihar Extension|Gurgaon": {
+    "latitude": 28.5007712,
+    "longitude": 77.0398992,
+    "query": "Palam Vihar Extension, Gurgaon, India"
+  },
+  "Pataudi Road|Gurgaon": {
+    "latitude": 28.347879,
+    "longitude": 76.7522376,
+    "query": "Pataudi Road, Gurgaon, India"
+  },
+  "Phase 2 Sushant Lok 3|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Phase 2 Sushant Lok 3, Gurgaon, India"
+  },
+  "Ramgarh|Gurgaon": {
+    "latitude": 28.3940897,
+    "longitude": 77.0658684,
+    "query": "Ramgarh, Gurgaon, India"
+  },
+  "Rosewood|Gurgaon": {
+    "latitude": 28.4102341,
+    "longitude": 77.0544854,
+    "query": "Rosewood, Gurgaon, India"
+  },
+  "Sec 90|Gurgaon": {
+    "latitude": 28.4069974,
+    "longitude": 76.9365562,
+    "query": "Sec 90, Gurgaon, India"
+  },
+  "Sector - 33, Sohna, Gurgaon|Gurgaon": {
+    "latitude": 28.3241636,
+    "longitude": 77.0848644,
+    "query": "Sector - 33, Sohna, Gurgaon, Gurgaon, India"
+  },
+  "Sector 1 Imt Manesar|Gurgaon": {
+    "latitude": 28.3671851,
+    "longitude": 76.920669,
+    "query": "Sector 1 Imt Manesar, Gurgaon, India"
+  },
+  "Sector 102 Gurgaon|Gurgaon": {
+    "latitude": 28.4754872,
+    "longitude": 76.9711747,
+    "query": "Sector 102 Gurgaon, Gurgaon, India"
+  },
+  "Sector 103 Gurgaon|Gurgaon": {
+    "latitude": 28.493087,
+    "longitude": 76.9866453,
+    "query": "Sector 103 Gurgaon, Gurgaon, India"
+  },
+  "Sector 104 Gurgaon|Gurgaon": {
+    "latitude": 28.4795324,
+    "longitude": 76.9937197,
+    "query": "Sector 104 Gurgaon, Gurgaon, India"
+  },
+  "Sector 106 Gurgaon|Gurgaon": {
+    "latitude": 28.5060806,
+    "longitude": 76.9967796,
+    "query": "Sector 106 Gurgaon, Gurgaon, India"
+  },
+  "Sector 107 Gurgaon|Gurgaon": {
+    "latitude": 28.506941,
+    "longitude": 76.9752137,
+    "query": "Sector 107 Gurgaon, Gurgaon, India"
+  },
+  "Sector 108 Gurgaon|Gurgaon": {
+    "latitude": 28.5128994,
+    "longitude": 76.9823615,
+    "query": "Sector 108 Gurgaon, Gurgaon, India"
+  },
+  "Sector 109 Gurgaon|Gurgaon": {
+    "latitude": 28.5109205,
+    "longitude": 77.0065956,
+    "query": "Sector 109 Gurgaon, Gurgaon, India"
+  },
+  "Sector 10A Gurgaon|Gurgaon": {
+    "latitude": 28.4445813,
+    "longitude": 77.0060231,
+    "query": "Sector 10A Gurgaon, Gurgaon, India"
+  },
+  "Sector 110 A Gurgaon|Gurgaon": {
+    "latitude": 28.5069625,
+    "longitude": 77.018321,
+    "query": "Sector 110 A Gurgaon, Gurgaon, India"
+  },
+  "Sector 110 Gurgaon|Gurgaon": {
+    "latitude": 28.5069625,
+    "longitude": 77.018321,
+    "query": "Sector 110 Gurgaon, Gurgaon, India"
+  },
+  "Sector 111 Gurgaon|Gurgaon": {
+    "latitude": 28.5222773,
+    "longitude": 77.0336203,
+    "query": "Sector 111 Gurgaon, Gurgaon, India"
+  },
+  "Sector 112 Gurgaon|Gurgaon": {
+    "latitude": 28.5203402,
+    "longitude": 77.0188612,
+    "query": "Sector 112 Gurgaon, Gurgaon, India"
+  },
+  "Sector 113 Gurgaon|Gurgaon": {
+    "latitude": 28.5286649,
+    "longitude": 77.0250282,
+    "query": "Sector 113 Gurgaon, Gurgaon, India"
+  },
+  "Sector 14 Gurgaon|Gurgaon": {
+    "latitude": 28.4741534,
+    "longitude": 77.047729,
+    "query": "Sector 14 Gurgaon, Gurgaon, India"
+  },
+  "Sector 15 Gurgaon|Gurgaon": {
+    "latitude": 28.3986425,
+    "longitude": 76.8880109,
+    "query": "Sector 15 Gurgaon, Gurgaon, India"
+  },
+  "Sector 15 Part 2|Gurgaon": {
+    "latitude": 28.4534919,
+    "longitude": 77.0411056,
+    "query": "Sector 15 Part 2, Gurgaon, India"
+  },
+  "Sector 17 Gurgaon|Gurgaon": {
+    "latitude": 28.4758035,
+    "longitude": 77.0607773,
+    "query": "Sector 17 Gurgaon, Gurgaon, India"
+  },
+  "Sector 1A Imt Manesar|Gurgaon": {
+    "latitude": 28.3671851,
+    "longitude": 76.920669,
+    "query": "Sector 1A Imt Manesar, Gurgaon, India"
+  },
+  "Sector 2 Gurgaon|Gurgaon": {
+    "latitude": 28.5090499,
+    "longitude": 77.0342831,
+    "query": "Sector 2 Gurgaon, Gurgaon, India"
+  },
+  "Sector 21 Gurgaon|Gurgaon": {
+    "latitude": 28.5143629,
+    "longitude": 77.0730087,
+    "query": "Sector 21 Gurgaon, Gurgaon, India"
+  },
+  "Sector 22 Gurgaon|Gurgaon": {
+    "latitude": 28.4947315,
+    "longitude": 77.0691703,
+    "query": "Sector 22 Gurgaon, Gurgaon, India"
+  },
+  "Sector 23 Gurgaon|Gurgaon": {
+    "latitude": 28.510319,
+    "longitude": 77.0530094,
+    "query": "Sector 23 Gurgaon, Gurgaon, India"
+  },
+  "Sector 23A Gurgaon|Gurgaon": {
+    "latitude": 28.5056942,
+    "longitude": 77.0463022,
+    "query": "Sector 23A Gurgaon, Gurgaon, India"
+  },
+  "Sector 26 Gurgaon|Gurgaon": {
+    "latitude": 28.4779375,
+    "longitude": 77.1032425,
+    "query": "Sector 26 Gurgaon, Gurgaon, India"
+  },
+  "Sector 27 Gurgaon|Gurgaon": {
+    "latitude": 28.4646566,
+    "longitude": 77.0839505,
+    "query": "Sector 27 Gurgaon, Gurgaon, India"
+  },
+  "Sector 28 , Golf Course Road|Gurgaon": {
+    "latitude": 28.463537,
+    "longitude": 77.0953523,
+    "query": "Sector 28 , Golf Course Road, Gurgaon, India"
+  },
+  "Sector 28 Gurgaon|Gurgaon": {
+    "latitude": 28.4794143,
+    "longitude": 77.0833588,
+    "query": "Sector 28 Gurgaon, Gurgaon, India"
+  },
+  "Sector 3 Gurgaon|Gurgaon": {
+    "latitude": 28.4944483,
+    "longitude": 77.0985008,
+    "query": "Sector 3 Gurgaon, Gurgaon, India"
+  },
+  "Sector 30 Gurgaon|Gurgaon": {
+    "latitude": 28.4618719,
+    "longitude": 77.05688,
+    "query": "Sector 30 Gurgaon, Gurgaon, India"
+  },
+  "Sector 31 Gurgaon|Gurgaon": {
+    "latitude": 28.4540044,
+    "longitude": 77.0497179,
+    "query": "Sector 31 Gurgaon, Gurgaon, India"
+  },
+  "Sector 33 Gurgaon|Gurgaon": {
+    "latitude": 28.4384785,
+    "longitude": 77.0251655,
+    "query": "Sector 33 Gurgaon, Gurgaon, India"
+  },
+  "Sector 36 Sohna|Gurgaon": {
+    "latitude": 28.4160012,
+    "longitude": 77.1085564,
+    "query": "Sector 36 Sohna, Gurgaon, India"
+  },
+  "Sector 36A Gurgaon|Gurgaon": {
+    "latitude": 28.4202285,
+    "longitude": 76.9719998,
+    "query": "Sector 36A Gurgaon, Gurgaon, India"
+  },
+  "Sector 37C Gurgaon|Gurgaon": {
+    "latitude": 28.4489095,
+    "longitude": 76.9880502,
+    "query": "Sector 37C Gurgaon, Gurgaon, India"
+  },
+  "Sector 37D Gurgaon|Gurgaon": {
+    "latitude": 28.4480039,
+    "longitude": 76.9697682,
+    "query": "Sector 37D Gurgaon, Gurgaon, India"
+  },
+  "Sector 38 Gurgaon|Gurgaon": {
+    "latitude": 28.4351423,
+    "longitude": 77.0403538,
+    "query": "Sector 38 Gurgaon, Gurgaon, India"
+  },
+  "Sector 39 Gurgaon|Gurgaon": {
+    "latitude": 28.4433686,
+    "longitude": 77.0552345,
+    "query": "Sector 39 Gurgaon, Gurgaon, India"
+  },
+  "Sector 4 Gurgaon|Gurgaon": {
+    "latitude": 28.4682659,
+    "longitude": 77.0325424,
+    "query": "Sector 4 Gurgaon, Gurgaon, India"
+  },
+  "Sector 40 Gurgaon|Gurgaon": {
+    "latitude": 28.449216,
+    "longitude": 77.0566378,
+    "query": "Sector 40 Gurgaon, Gurgaon, India"
+  },
+  "Sector 41 Gurgaon|Gurgaon": {
+    "latitude": 28.4433686,
+    "longitude": 77.0552345,
+    "query": "Sector 41 Gurgaon, Gurgaon, India"
+  },
+  "Sector 42 Gurgaon|Gurgaon": {
+    "latitude": 28.4487856,
+    "longitude": 77.0988212,
+    "query": "Sector 42 Gurgaon, Gurgaon, India"
+  },
+  "Sector 43 Gurgaon|Gurgaon": {
+    "latitude": 28.4487856,
+    "longitude": 77.0988212,
+    "query": "Sector 43 Gurgaon, Gurgaon, India"
+  },
+  "Sector 45 Gurgaon|Gurgaon": {
+    "latitude": 28.4449004,
+    "longitude": 77.0663545,
+    "query": "Sector 45 Gurgaon, Gurgaon, India"
+  },
+  "Sector 46 Gurgaon|Gurgaon": {
+    "latitude": 28.4268461,
+    "longitude": 77.0584252,
+    "query": "Sector 46 Gurgaon, Gurgaon, India"
+  },
+  "Sector 47 , Sector 51|Gurgaon": {
+    "latitude": 30.7059088,
+    "longitude": 76.7428731,
+    "query": "Sector 47 , Sector 51, Gurgaon, India"
+  },
+  "Sector 47 Gurgaon|Gurgaon": {
+    "latitude": 28.4268461,
+    "longitude": 77.0584252,
+    "query": "Sector 47 Gurgaon, Gurgaon, India"
+  },
+  "Sector 48 Gurgaon|Gurgaon": {
+    "latitude": 28.4104903,
+    "longitude": 77.0394627,
+    "query": "Sector 48 Gurgaon, Gurgaon, India"
+  },
+  "Sector 49 Gurgaon|Gurgaon": {
+    "latitude": 28.4127374,
+    "longitude": 77.0555164,
+    "query": "Sector 49 Gurgaon, Gurgaon, India"
+  },
+  "Sector 50 Gurgaon|Gurgaon": {
+    "latitude": 28.4268461,
+    "longitude": 77.0584252,
+    "query": "Sector 50 Gurgaon, Gurgaon, India"
+  },
+  "Sector 51 Gurgaon|Gurgaon": {
+    "latitude": 28.4287011,
+    "longitude": 77.0666877,
+    "query": "Sector 51 Gurgaon, Gurgaon, India"
+  },
+  "Sector 52 Gurgaon|Gurgaon": {
+    "latitude": 28.4368166,
+    "longitude": 77.0795276,
+    "query": "Sector 52 Gurgaon, Gurgaon, India"
+  },
+  "Sector 53 Gurgaon|Gurgaon": {
+    "latitude": 28.4487856,
+    "longitude": 77.0988212,
+    "query": "Sector 53 Gurgaon, Gurgaon, India"
+  },
+  "Sector 54 Gurgaon|Gurgaon": {
+    "latitude": 28.433569,
+    "longitude": 77.1055815,
+    "query": "Sector 54 Gurgaon, Gurgaon, India"
+  },
+  "Sector 55 Gurgaon|Gurgaon": {
+    "latitude": 28.4274166,
+    "longitude": 77.1097538,
+    "query": "Sector 55 Gurgaon, Gurgaon, India"
+  },
+  "Sector 56 Gurgaon|Gurgaon": {
+    "latitude": 28.4252244,
+    "longitude": 77.0992377,
+    "query": "Sector 56 Gurgaon, Gurgaon, India"
+  },
+  "Sector 57 Gurgaon|Gurgaon": {
+    "latitude": 28.4232478,
+    "longitude": 77.0804487,
+    "query": "Sector 57 Gurgaon, Gurgaon, India"
+  },
+  "Sector 58 Gurgaon|Gurgaon": {
+    "latitude": 28.4160012,
+    "longitude": 77.1085564,
+    "query": "Sector 58 Gurgaon, Gurgaon, India"
+  },
+  "Sector 59 Gurgaon|Gurgaon": {
+    "latitude": 28.4030162,
+    "longitude": 77.1066682,
+    "query": "Sector 59 Gurgaon, Gurgaon, India"
+  },
+  "Sector 60 Gurgaon|Gurgaon": {
+    "latitude": 28.3985617,
+    "longitude": 77.0978276,
+    "query": "Sector 60 Gurgaon, Gurgaon, India"
+  },
+  "Sector 61 Gurgaon|Gurgaon": {
+    "latitude": 28.4110188,
+    "longitude": 77.0963685,
+    "query": "Sector 61 Gurgaon, Gurgaon, India"
+  },
+  "Sector 62 Gurgaon|Gurgaon": {
+    "latitude": 28.407697,
+    "longitude": 77.0823781,
+    "query": "Sector 62 Gurgaon, Gurgaon, India"
+  },
+  "Sector 62Emaar Uarban Oasis|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Sector 62Emaar Uarban Oasis, Gurgaon, India"
+  },
+  "Sector 63 Gurgaon|Gurgaon": {
+    "latitude": 28.3964476,
+    "longitude": 77.086498,
+    "query": "Sector 63 Gurgaon, Gurgaon, India"
+  },
+  "Sector 63A Gurgaon|Gurgaon": {
+    "latitude": 28.4618719,
+    "longitude": 77.05688,
+    "query": "Sector 63A Gurgaon, Gurgaon, India"
+  },
+  "Sector 64 Gurgaon|Gurgaon": {
+    "latitude": 28.3914643,
+    "longitude": 77.0761983,
+    "query": "Sector 64 Gurgaon, Gurgaon, India"
+  },
+  "Sector 65 Gurgaon|Gurgaon": {
+    "latitude": 28.4030162,
+    "longitude": 77.0695893,
+    "query": "Sector 65 Gurgaon, Gurgaon, India"
+  },
+  "Sector 66 Gurgaon|Gurgaon": {
+    "latitude": 28.3974292,
+    "longitude": 77.0538823,
+    "query": "Sector 66 Gurgaon, Gurgaon, India"
+  },
+  "Sector 67 Gurgaon|Gurgaon": {
+    "latitude": 28.3864052,
+    "longitude": 77.0598046,
+    "query": "Sector 67 Gurgaon, Gurgaon, India"
+  },
+  "Sector 67A Gurgaon|Gurgaon": {
+    "latitude": 28.4618719,
+    "longitude": 77.05688,
+    "query": "Sector 67A Gurgaon, Gurgaon, India"
+  },
+  "Sector 68 Gurgaon|Gurgaon": {
+    "latitude": 28.388897,
+    "longitude": 77.0459859,
+    "query": "Sector 68 Gurgaon, Gurgaon, India"
+  },
+  "Sector 69 Gurgaon|Gurgaon": {
+    "latitude": 28.3960701,
+    "longitude": 77.0372311,
+    "query": "Sector 69 Gurgaon, Gurgaon, India"
+  },
+  "Sector 7 Gurgaon|Gurgaon": {
+    "latitude": 28.4671681,
+    "longitude": 77.018953,
+    "query": "Sector 7 Gurgaon, Gurgaon, India"
+  },
+  "Sector 70 Gurgaon|Gurgaon": {
+    "latitude": 28.3947261,
+    "longitude": 77.0223138,
+    "query": "Sector 70 Gurgaon, Gurgaon, India"
+  },
+  "Sector 70A Gurgaon|Gurgaon": {
+    "latitude": 28.3846684,
+    "longitude": 77.0220391,
+    "query": "Sector 70A Gurgaon, Gurgaon, India"
+  },
+  "Sector 71 Gurgaon|Gurgaon": {
+    "latitude": 28.3950557,
+    "longitude": 77.0314336,
+    "query": "Sector 71 Gurgaon, Gurgaon, India"
+  },
+  "Sector 72 Gurgaon|Gurgaon": {
+    "latitude": 28.3943815,
+    "longitude": 77.032363,
+    "query": "Sector 72 Gurgaon, Gurgaon, India"
+  },
+  "Sector 73 Gurgaon|Gurgaon": {
+    "latitude": 28.4088081,
+    "longitude": 77.0161691,
+    "query": "Sector 73 Gurgaon, Gurgaon, India"
+  },
+  "Sector 74 Gurgaon|Gurgaon": {
+    "latitude": 28.4110081,
+    "longitude": 77.0101209,
+    "query": "Sector 74 Gurgaon, Gurgaon, India"
+  },
+  "Sector 76 Gurgaon|Gurgaon": {
+    "latitude": 28.3910112,
+    "longitude": 76.9900243,
+    "query": "Sector 76 Gurgaon, Gurgaon, India"
+  },
+  "Sector 77 Gurgaon|Gurgaon": {
+    "latitude": 28.3832337,
+    "longitude": 76.982557,
+    "query": "Sector 77 Gurgaon, Gurgaon, India"
+  },
+  "Sector 78 Gurgaon|Gurgaon": {
+    "latitude": 28.3725283,
+    "longitude": 76.9702955,
+    "query": "Sector 78 Gurgaon, Gurgaon, India"
+  },
+  "Sector 79 Gurgaon|Gurgaon": {
+    "latitude": 28.4618719,
+    "longitude": 77.05688,
+    "query": "Sector 79 Gurgaon, Gurgaon, India"
+  },
+  "Sector 80 Gurgaon|Gurgaon": {
+    "latitude": 28.3702173,
+    "longitude": 76.9611159,
+    "query": "Sector 80 Gurgaon, Gurgaon, India"
+  },
+  "Sector 81 Gurgaon|Gurgaon": {
+    "latitude": 28.3873647,
+    "longitude": 76.9475835,
+    "query": "Sector 81 Gurgaon, Gurgaon, India"
+  },
+  "Sector 82 Gurgaon|Gurgaon": {
+    "latitude": 28.3932827,
+    "longitude": 76.9545277,
+    "query": "Sector 82 Gurgaon, Gurgaon, India"
+  },
+  "Sector 82A Gurgaon|Gurgaon": {
+    "latitude": 28.3881583,
+    "longitude": 76.96273,
+    "query": "Sector 82A Gurgaon, Gurgaon, India"
+  },
+  "Sector 83 Gurgaon|Gurgaon": {
+    "latitude": 28.3963578,
+    "longitude": 76.9654747,
+    "query": "Sector 83 Gurgaon, Gurgaon, India"
+  },
+  "Sector 83 New Gurgaon|Gurgaon": {
+    "latitude": 28.467026,
+    "longitude": 77.0136083,
+    "query": "Sector 83 New Gurgaon, Gurgaon, India"
+  },
+  "Sector 83 Vatika Floor|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Sector 83 Vatika Floor, Gurgaon, India"
+  },
+  "Sector 84 Gurgaon|Gurgaon": {
+    "latitude": 28.4035469,
+    "longitude": 76.9677894,
+    "query": "Sector 84 Gurgaon, Gurgaon, India"
+  },
+  "Sector 85 Gurgaon|Gurgaon": {
+    "latitude": 28.3985762,
+    "longitude": 76.9547447,
+    "query": "Sector 85 Gurgaon, Gurgaon, India"
+  },
+  "Sector 86 Gurgaon|Gurgaon": {
+    "latitude": 28.3981205,
+    "longitude": 76.9411257,
+    "query": "Sector 86 Gurgaon, Gurgaon, India"
+  },
+  "Sector 88A Gurgaon|Gurgaon": {
+    "latitude": 28.4337898,
+    "longitude": 76.9539433,
+    "query": "Sector 88A Gurgaon, Gurgaon, India"
+  },
+  "Sector 88B Gurgaon|Gurgaon": {
+    "latitude": 28.4420223,
+    "longitude": 76.9538495,
+    "query": "Sector 88B Gurgaon, Gurgaon, India"
+  },
+  "Sector 89 A Gurgaon|Gurgaon": {
+    "latitude": 28.4184455,
+    "longitude": 76.9457567,
+    "query": "Sector 89 A Gurgaon, Gurgaon, India"
+  },
+  "Sector 89 Gurgaon|Gurgaon": {
+    "latitude": 28.4184455,
+    "longitude": 76.9457567,
+    "query": "Sector 89 Gurgaon, Gurgaon, India"
+  },
+  "Sector 9 Gurgaon|Gurgaon": {
+    "latitude": 28.3840986,
+    "longitude": 76.8861337,
+    "query": "Sector 9 Gurgaon, Gurgaon, India"
+  },
+  "Sector 90 Gurgaon|Gurgaon": {
+    "latitude": 28.4069974,
+    "longitude": 76.9365562,
+    "query": "Sector 90 Gurgaon, Gurgaon, India"
+  },
+  "Sector 91 Gurgaon|Gurgaon": {
+    "latitude": 28.4007588,
+    "longitude": 76.9210802,
+    "query": "Sector 91 Gurgaon, Gurgaon, India"
+  },
+  "Sector 92 Gurgaon|Gurgaon": {
+    "latitude": 28.4089049,
+    "longitude": 76.9155232,
+    "query": "Sector 92 Gurgaon, Gurgaon, India"
+  },
+  "Sector 93 Gurgaon|Gurgaon": {
+    "latitude": 28.4156048,
+    "longitude": 76.931638,
+    "query": "Sector 93 Gurgaon, Gurgaon, India"
+  },
+  "Sector 95 Gurgaon|Gurgaon": {
+    "latitude": 28.4149443,
+    "longitude": 76.9114892,
+    "query": "Sector 95 Gurgaon, Gurgaon, India"
+  },
+  "Sector 95A Gurgaon|Gurgaon": {
+    "latitude": 28.4690266,
+    "longitude": 76.9962811,
+    "query": "Sector 95A Gurgaon, Gurgaon, India"
+  },
+  "Sector 99 Gurgaon|Gurgaon": {
+    "latitude": 28.4645549,
+    "longitude": 76.9628585,
+    "query": "Sector 99 Gurgaon, Gurgaon, India"
+  },
+  "Sector 99A Gurgaon|Gurgaon": {
+    "latitude": 28.4554059,
+    "longitude": 76.9510278,
+    "query": "Sector 99A Gurgaon, Gurgaon, India"
+  },
+  "Sector 9A Gurgaon|Gurgaon": {
+    "latitude": 28.4690266,
+    "longitude": 76.9962811,
+    "query": "Sector 9A Gurgaon, Gurgaon, India"
+  },
+  "Sector 9A Sector 9 Gurgaon|Gurgaon": {
+    "latitude": 28.4690266,
+    "longitude": 76.9962811,
+    "query": "Sector 9A Sector 9 Gurgaon, Gurgaon, India"
+  },
+  "Sector-2 Sohna|Gurgaon": {
+    "latitude": 28.3241636,
+    "longitude": 77.0848644,
+    "query": "Sector-2 Sohna, Gurgaon, India"
+  },
+  "Sector-33 Sohna|Gurgaon": {
+    "latitude": 28.3241636,
+    "longitude": 77.0848644,
+    "query": "Sector-33 Sohna, Gurgaon, India"
+  },
+  "Sector-35 Sohna|Gurgaon": {
+    "latitude": 28.3241636,
+    "longitude": 77.0848644,
+    "query": "Sector-35 Sohna, Gurgaon, India"
+  },
+  "Sector-4 Sohna|Gurgaon": {
+    "latitude": 28.3241636,
+    "longitude": 77.0848644,
+    "query": "Sector-4 Sohna, Gurgaon, India"
+  },
+  "Sector-5 Sohna|Gurgaon": {
+    "latitude": 28.3241636,
+    "longitude": 77.0848644,
+    "query": "Sector-5 Sohna, Gurgaon, India"
+  },
+  "Shivpuri|Gurgaon": {
+    "latitude": 25.3741215,
+    "longitude": 77.8278866,
+    "query": "Shivpuri, Gurgaon, India"
+  },
+  "Sohna|Gurgaon": {
+    "latitude": 28.3241636,
+    "longitude": 77.0848644,
+    "query": "Sohna, Gurgaon, India"
+  },
+  "Sohna Road|Gurgaon": {
+    "latitude": 28.3999199,
+    "longitude": 77.0451273,
+    "query": "Sohna Road, Gurgaon, India"
+  },
+  "South City|Gurgaon": {
+    "latitude": 28.4597391,
+    "longitude": 77.0612091,
+    "query": "South City, Gurgaon, India"
+  },
+  "South City 1|Gurgaon": {
+    "latitude": 28.4188433,
+    "longitude": 77.0440293,
+    "query": "South City 1, Gurgaon, India"
+  },
+  "South City 2|Gurgaon": {
+    "latitude": 28.4188806,
+    "longitude": 77.0439211,
+    "query": "South City 2, Gurgaon, India"
+  },
+  "Southern Peripheral Road|Gurgaon": {
+    "latitude": 28.4021644,
+    "longitude": 77.0382675,
+    "query": "Southern Peripheral Road, Gurgaon, India"
+  },
+  "Suncity|Gurgaon": {
+    "latitude": 28.507814,
+    "longitude": 77.0713577,
+    "query": "Suncity, Gurgaon, India"
+  },
+  "Sushant Lok|Gurgaon": {
+    "latitude": 28.4706634,
+    "longitude": 77.0798127,
+    "query": "Sushant Lok, Gurgaon, India"
+  },
+  "Sushant Lok 3 Extension|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Sushant Lok 3 Extension, Gurgaon, India"
+  },
+  "Sushant Lok Phase 1|Gurgaon": {
+    "latitude": 28.4545693,
+    "longitude": 77.0826249,
+    "query": "Sushant Lok Phase 1, Gurgaon, India"
+  },
+  "Sushant Lok Phase 2|Gurgaon": {
+    "latitude": 28.464228,
+    "longitude": 77.076724,
+    "query": "Sushant Lok Phase 2, Gurgaon, India"
+  },
+  "Sushant Lok Phase 3|Gurgaon": {
+    "latitude": 28.464228,
+    "longitude": 77.076724,
+    "query": "Sushant Lok Phase 3, Gurgaon, India"
+  },
+  "Uppals Southend|Gurgaon": {
+    "latitude": null,
+    "longitude": null,
+    "query": "Uppals Southend, Gurgaon, India"
+  },
+  "Valley View Estate|Gurgaon": {
+    "latitude": 28.4358878,
+    "longitude": 77.1365212,
+    "query": "Valley View Estate, Gurgaon, India"
+  },
+  "Vigyan Vihar|Gurgaon": {
+    "latitude": 28.6605415,
+    "longitude": 77.3126204,
+    "query": "Vigyan Vihar, Gurgaon, India"
+  },
+  "Westerlies|Gurgaon": {
+    "latitude": 15.2784329,
+    "longitude": 73.9284517,
+    "query": "Westerlies, Gurgaon, India"
+  }
+}
