@@ -10,7 +10,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from utils.price_utils import format_price, format_price_per_sqft
+from .price_utils import format_price, format_price_per_sqft
 
 
 BREVO_EMAIL_URL = "https://api.brevo.com/v3/smtp/email"
