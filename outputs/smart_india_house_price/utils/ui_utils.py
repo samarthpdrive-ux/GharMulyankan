@@ -35,6 +35,11 @@ html, body, [class*="css"] {
         radial-gradient(circle at 82% 0%, rgba(98, 91, 246, .08), transparent 25rem),
         var(--canvas);
 }
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"] {
+    background-color: var(--canvas);
+}
 [data-testid="stHeader"] { background: transparent; }
 [data-testid="stToolbar"] { right: 1rem; }
 .block-container {
@@ -408,6 +413,82 @@ p { color: var(--muted); }
 .empty-copy { max-width: 440px; margin: 5px auto 0; color: var(--muted); font-size: .75rem; }
 .app-footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); color: #8a91a2; text-align: center; font-size: .66rem; }
 
+/* Immediate loading shell shown while Python imports, data, or the model load. */
+.loading-shell {
+    overflow: hidden;
+    padding: 24px;
+    margin: .2rem 0 1rem;
+    border: 1px solid #e2e5ef;
+    border-radius: 20px;
+    background:
+        radial-gradient(circle at 92% 0%, rgba(98,91,246,.13), transparent 16rem),
+        rgba(255,255,255,.94);
+    box-shadow: 0 18px 48px rgba(25,34,67,.08);
+}
+.loading-top { display: flex; align-items: center; gap: 13px; }
+.loading-orbit {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border: 3px solid #e5e3ff;
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: loading-spin .9s linear infinite;
+}
+.loading-title { color: var(--ink); font-size: .9rem; font-weight: 780; }
+.loading-copy { margin-top: 3px; color: var(--muted); font-size: .72rem; }
+.loading-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+.loading-block {
+    position: relative;
+    overflow: hidden;
+    min-height: 70px;
+    border: 1px solid #eceef5;
+    border-radius: 13px;
+    background: #f6f7fb;
+}
+.loading-block::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+    animation: loading-shimmer 1.35s ease-in-out infinite;
+}
+.ready-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 13px;
+    margin: .2rem 0 1rem;
+    border: 1px solid #d9eee8;
+    border-radius: 12px;
+    background: #f3fbf8;
+    color: #42645c;
+    font-size: .7rem;
+    line-height: 1.45;
+}
+.ready-mark {
+    display: grid;
+    place-items: center;
+    width: 23px;
+    height: 23px;
+    flex: 0 0 23px;
+    border-radius: 8px;
+    background: var(--teal);
+    color: white;
+    font-size: .68rem;
+    font-weight: 850;
+}
+.ready-title { color: #204d42; font-weight: 760; }
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+@keyframes loading-shimmer { 100% { transform: translateX(100%); } }
+
 /* Widgets */
 label, [data-testid="stWidgetLabel"] p { color: #40485b !important; font-weight: 680 !important; font-size: .76rem !important; }
 [data-baseweb="select"] > div,
@@ -466,11 +547,16 @@ hr { border-color: var(--line); }
     .workflow-strip { grid-template-columns: 1fr 1fr; }
     .section-rule { display: none; }
     .result-card { min-height: auto; padding: 26px 22px; }
+    .loading-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 520px) {
     .workflow-strip { grid-template-columns: 1fr; }
     .hero-chips { display: none; }
     .section-head { align-items: center; }
+    .loading-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .loading-orbit, .loading-block::after { animation: none; }
 }
 </style>
 """
@@ -479,6 +565,44 @@ hr { border-color: var(--line); }
 def apply_page_style() -> None:
     """Apply the shared visual system to the current page."""
     st.markdown(APP_CSS, unsafe_allow_html=True)
+
+
+def show_loading_shell(title: str, message: str):
+    """Render a branded placeholder before slow imports or data work finishes."""
+    placeholder = st.empty()
+    placeholder.markdown(
+        f"""
+        <div class="loading-shell" role="status" aria-live="polite">
+            <div class="loading-top">
+                <span class="loading-orbit" aria-hidden="true"></span>
+                <div>
+                    <div class="loading-title">{html.escape(title)}</div>
+                    <div class="loading-copy">{html.escape(message)}</div>
+                </div>
+            </div>
+            <div class="loading-grid" aria-hidden="true">
+                <span class="loading-block"></span>
+                <span class="loading-block"></span>
+                <span class="loading-block"></span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    return placeholder
+
+
+def complete_loading_shell(placeholder, title: str, message: str) -> None:
+    """Replace the loading skeleton with concise fetched-data information."""
+    placeholder.markdown(
+        f"""
+        <div class="ready-strip" role="status" aria-live="polite">
+            <span class="ready-mark">✓</span>
+            <span><span class="ready-title">{html.escape(title)}</span> · {html.escape(message)}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def show_sidebar(context: str, description: str) -> None:
