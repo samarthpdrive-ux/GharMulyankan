@@ -5,10 +5,18 @@ from __future__ import annotations
 import html
 import json
 import math
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
+
+# Render can start Streamlit from the repository root while this file is inside
+# outputs/smart_india_house_price. Add this project folder to Python's import path
+# so the local utils package is found consistently on Windows and Linux.
+PROJECT_DIR = Path(__file__).resolve().parent
+if str(PROJECT_DIR) not in sys.path:
+    sys.path.insert(0, str(PROJECT_DIR))
 
 import joblib
 import pandas as pd
@@ -31,7 +39,7 @@ from utils.ui_utils import (
 )
 
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = PROJECT_DIR
 DATA_PATH = BASE_DIR / "data" / "india_housing.csv"
 MODEL_PATH = BASE_DIR / "models" / "best_model.joblib"
 METADATA_PATH = BASE_DIR / "models" / "model_metadata.json"
