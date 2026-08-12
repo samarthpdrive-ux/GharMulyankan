@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from database import get_history_summary, init_database
+from utils.browser_storage import browser_history
 from utils.price_utils import format_price
 from utils.ui_utils import (
     apply_page_style,
@@ -24,7 +24,6 @@ DATA_PATH = BASE_DIR / "data" / "india_housing.csv"
 
 st.set_page_config(page_title="Dashboard | GharMulyankan", page_icon="📊", layout="wide")
 apply_page_style()
-init_database()
 
 
 @st.cache_data(show_spinner=False)
@@ -48,7 +47,7 @@ if not DATA_PATH.exists():
     st.stop()
 
 data = load_data()
-history = get_history_summary()
+saved_records = browser_history(component_key="dashboard_browser_history")
 
 with st.container(border=True):
     filter_left, filter_right = st.columns([1.2, 2.2], gap="large")
@@ -70,7 +69,7 @@ one, two, three, four = st.columns(4)
 one.metric("Visible listings", f"{len(view_data):,}")
 two.metric("Localities covered", f"{view_data['location'].nunique():,}")
 three.metric("Median asking price", format_price(float(view_data["price"].median())))
-four.metric("Saved valuations", history["total"])
+four.metric("This browser's saves", len(saved_records))
 
 section_header("01", "Explore the training market", "Coverage and price distribution")
 chart_left, chart_right = st.columns(2, gap="large")
