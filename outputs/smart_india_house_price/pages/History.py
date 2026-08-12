@@ -20,8 +20,10 @@ from utils.browser_storage import browser_history
 from utils.price_utils import format_price, format_price_per_sqft
 from utils.ui_utils import (
     apply_page_style,
+    complete_loading_shell,
     section_header,
     show_hero,
+    show_loading_shell,
     show_sidebar,
     style_plotly,
 )
@@ -141,8 +143,23 @@ show_hero(
     ["Stored on this device", "Email selected report", "Export to CSV"],
 )
 
-saved_records = browser_history(component_key="history_browser_storage")
+history_loading = show_loading_shell(
+    "Syncing your valuation library",
+    "Reading saved records privately from this browser profile.",
+)
+saved_records, browser_history_ready = browser_history(
+    component_key="history_browser_storage",
+    include_status=True,
+)
+if not browser_history_ready:
+    st.stop()
+
 history = pd.DataFrame(saved_records)
+complete_loading_shell(
+    history_loading,
+    "Valuation library ready",
+    f"{len(history):,} saved valuation{'s' if len(history) != 1 else ''} loaded from this browser.",
+)
 if history.empty:
     st.markdown(
         """
