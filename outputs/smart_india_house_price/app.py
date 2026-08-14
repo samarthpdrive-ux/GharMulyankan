@@ -3,7 +3,9 @@ from __future__ import annotations
 import html
 import json
 import math
+from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
 
 import joblib
 import pandas as pd
@@ -12,9 +14,9 @@ import plotly.graph_objects as go
 import streamlit as st
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# CONFIG
-# ──────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_PATH = BASE_DIR / "data" / "india_housing.csv"
@@ -22,16 +24,16 @@ MODEL_PATH = BASE_DIR / "models" / "best_model.joblib"
 METADATA_PATH = BASE_DIR / "models" / "model_metadata.json"
 
 st.set_page_config(
-    page_title="GharMulyankan | AI Property Valuation",
+    page_title="GharMulyankan | Property Intelligence",
     page_icon="🏠",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# DESIGN SYSTEM
-# ──────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# FULL ADVANCED DESIGN SYSTEM
+# =============================================================================
 
 st.markdown(
     """
@@ -39,17 +41,16 @@ st.markdown(
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
 
 :root {
-    --navy: #0b1020;
-    --navy-2: #121a31;
-    --purple: #665cf6;
-    --purple-dark: #4d43df;
-    --purple-soft: #eeecff;
-    --ink: #171c2d;
-    --muted: #727a8d;
-    --line: #e7e9f0;
-    --surface: #ffffff;
+    --ink: #141a2a;
+    --muted: #70798d;
+    --line: #e5e8f0;
+    --accent: #655bf6;
+    --accent-dark: #4e44de;
+    --accent-soft: #eeecff;
+    --navy: #0a1020;
     --teal: #18b893;
-    --gold: #f1a83a;
+    --gold: #efa52e;
+    --rose: #e95c85;
 }
 
 html, body, [class*="css"] {
@@ -58,8 +59,8 @@ html, body, [class*="css"] {
 
 .stApp {
     background:
-        radial-gradient(circle at 90% -5%, rgba(102, 92, 246, .10), transparent 26rem),
-        linear-gradient(180deg, #f8f9fd 0%, #f4f6fb 100%);
+        radial-gradient(circle at 96% -5%, rgba(101,91,246,.12), transparent 28rem),
+        linear-gradient(180deg, #fafbff 0%, #f4f6fb 100%);
     color: var(--ink);
 }
 
@@ -70,31 +71,29 @@ html, body, [class*="css"] {
 
 #MainMenu, footer, header { visibility: hidden; }
 
-/* Sidebar */
+/* SIDEBAR */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0c1223, #111a33);
-    border-right: 1px solid rgba(255,255,255,.07);
+    background: linear-gradient(180deg, #090f1e 0%, #121d38 100%);
+    border-right: 1px solid rgba(255,255,255,.08);
 }
 
-[data-testid="stSidebar"] * {
-    color: #e8ebf7;
-}
+[data-testid="stSidebar"] * { color: #e8ebf6; }
 
 .brand {
     display: flex;
     align-items: center;
     gap: 11px;
-    padding: 5px 3px 19px;
+    padding: 3px 2px 20px;
 }
 
 .brand-icon {
     display: grid;
     place-items: center;
-    width: 42px;
-    height: 42px;
+    width: 43px;
+    height: 43px;
     border-radius: 13px;
-    background: linear-gradient(135deg, #7b72ff, #5147de);
-    box-shadow: 0 10px 25px rgba(102,92,246,.35);
+    background: linear-gradient(135deg, #8178ff, #5046df);
+    box-shadow: 0 12px 25px rgba(102,92,246,.35);
     color: white;
     font-family: Manrope, sans-serif;
     font-size: 1.1rem;
@@ -104,43 +103,43 @@ html, body, [class*="css"] {
 .brand-name {
     color: white;
     font-family: Manrope, sans-serif;
-    font-size: 1rem;
+    font-size: 1.02rem;
     font-weight: 800;
-    letter-spacing: -.04em;
+    letter-spacing: -.045em;
 }
 
-.brand-subtitle {
-    color: #8993ad;
-    font-size: .66rem;
+.brand-copy {
     margin-top: 2px;
+    color: #8b96b1;
+    font-size: .66rem;
 }
 
-.sidebar-card {
-    padding: 15px;
-    margin: 6px 0 16px;
+.sidebar-status {
+    padding: 16px;
+    margin-bottom: 16px;
     border: 1px solid rgba(255,255,255,.09);
-    border-radius: 15px;
+    border-radius: 16px;
     background: rgba(255,255,255,.045);
 }
 
-.sidebar-overline {
+.overline {
     color: #929dbb;
-    font-size: .62rem;
+    font-size: .61rem;
     font-weight: 700;
-    letter-spacing: .13em;
+    letter-spacing: .14em;
     text-transform: uppercase;
 }
 
-.sidebar-title {
+.sidebar-status-title {
     margin-top: 7px;
     color: white;
     font-size: .86rem;
     font-weight: 700;
 }
 
-.sidebar-copy {
+.sidebar-status-copy {
     margin-top: 5px;
-    color: #a2abc1;
+    color: #a5aec2;
     font-size: .70rem;
     line-height: 1.55;
 }
@@ -148,84 +147,84 @@ html, body, [class*="css"] {
 .live {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     margin-top: 12px;
-    color: #7ee2c8;
-    font-size: .68rem;
+    color: #83e5ca;
+    font-size: .67rem;
 }
 
-.dot {
+.live-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #30d0a5;
-    box-shadow: 0 0 0 4px rgba(48,208,165,.12);
+    background: #31d1a6;
+    box-shadow: 0 0 0 4px rgba(49,209,166,.12);
 }
 
-/* Hero */
+/* HERO */
 .hero {
     position: relative;
     overflow: hidden;
-    min-height: 265px;
+    min-height: 267px;
     padding: 40px 45px;
     border: 1px solid rgba(255,255,255,.10);
-    border-radius: 24px;
+    border-radius: 25px;
     background:
-        radial-gradient(circle at 87% 16%, rgba(101,92,246,.58), transparent 17rem),
-        radial-gradient(circle at 72% 100%, rgba(20,171,200,.22), transparent 17rem),
-        linear-gradient(125deg, #0b1020, #151e3a);
-    box-shadow: 0 22px 50px rgba(12,18,39,.18);
+        radial-gradient(circle at 88% 17%, rgba(109,100,255,.60), transparent 18rem),
+        radial-gradient(circle at 70% 100%, rgba(20,172,199,.22), transparent 18rem),
+        linear-gradient(125deg, #09101f, #172240);
+    box-shadow: 0 23px 53px rgba(12,18,40,.18);
 }
 
 .hero:after {
     content: "";
     position: absolute;
-    right: -60px;
-    top: -85px;
-    width: 270px;
-    height: 270px;
-    border: 1px solid rgba(255,255,255,.12);
+    right: -75px;
+    top: -90px;
+    width: 275px;
+    height: 275px;
+    border: 1px solid rgba(255,255,255,.13);
     border-radius: 50%;
 }
 
-.hero-content { position: relative; z-index: 1; max-width: 720px; }
+.hero-content { position: relative; z-index: 1; max-width: 735px; }
 
 .eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 7px 11px;
-    border: 1px solid rgba(157,151,255,.28);
+    border: 1px solid rgba(156,150,255,.28);
     border-radius: 99px;
-    background: rgba(102,92,246,.13);
-    color: #c1bdff;
-    font-size: .66rem;
+    background: rgba(101,91,246,.14);
+    color: #c4c0ff;
+    font-size: .65rem;
     font-weight: 700;
-    letter-spacing: .10em;
+    letter-spacing: .11em;
     text-transform: uppercase;
 }
 
-.eyebrow span {
+.eyebrow-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #37d9b0;
+    background: #35d9ae;
 }
 
 .hero h1 {
-    margin: 15px 0 10px;
+    margin: .9rem 0 .6rem;
     color: white;
     font-family: Manrope, sans-serif;
-    font-size: clamp(2rem, 4.2vw, 3.45rem);
+    font-size: clamp(2.05rem, 4.4vw, 3.5rem);
     font-weight: 800;
-    line-height: 1.07;
+    line-height: 1.06;
     letter-spacing: -.065em;
 }
 
 .hero p {
     margin: 0;
-    color: #b6bfd4;
-    font-size: .93rem;
+    color: #b5bed4;
+    font-size: .94rem;
     line-height: 1.7;
 }
 
@@ -240,17 +239,17 @@ html, body, [class*="css"] {
     padding: 7px 10px;
     border: 1px solid rgba(255,255,255,.10);
     border-radius: 9px;
-    background: rgba(255,255,255,.055);
-    color: #d2d7e7;
-    font-size: .68rem;
+    background: rgba(255,255,255,.06);
+    color: #d1d7e7;
+    font-size: .67rem;
 }
 
-/* Section */
+/* SECTIONS */
 .section-heading {
     display: flex;
     align-items: center;
     gap: 11px;
-    margin: 30px 0 12px;
+    margin: 31px 0 12px;
 }
 
 .section-number {
@@ -258,36 +257,36 @@ html, body, [class*="css"] {
     place-items: center;
     width: 35px;
     height: 35px;
-    border: 1px solid #dcdff0;
-    border-radius: 10px;
+    border: 1px solid #dce0eb;
+    border-radius: 11px;
     background: white;
-    color: var(--purple);
+    color: var(--accent);
     font-size: .68rem;
     font-weight: 800;
+    box-shadow: 0 5px 16px rgba(24,31,56,.05);
 }
 
-.section-heading h2 {
-    margin: 0;
+.section-title {
     color: var(--ink);
     font-family: Manrope, sans-serif;
-    font-size: 1.02rem;
+    font-size: 1.03rem;
     font-weight: 800;
     letter-spacing: -.035em;
 }
 
-.section-heading p {
-    margin: 2px 0 0;
+.section-copy {
+    margin-top: 2px;
     color: var(--muted);
     font-size: .70rem;
 }
 
-.section-line {
+.section-rule {
     flex: 1;
     height: 1px;
     background: linear-gradient(90deg, var(--line), transparent);
 }
 
-/* Cards */
+/* SURFACES */
 [data-testid="stVerticalBlockBorderWrapper"] {
     border: 1px solid var(--line) !important;
     border-radius: 18px !important;
@@ -311,56 +310,54 @@ html, body, [class*="css"] {
 }
 
 [data-testid="stMetricValue"] {
-    color: var(--ink);
-    font-family: Manrope, sans-serif;
-    font-size: 1.28rem !important;
+    color: var(--ink) !important;
+    font-family: Manrope, sans-serif !important;
+    font-size: 1.3rem !important;
     font-weight: 800 !important;
     letter-spacing: -.04em;
 }
 
-.result-card {
+/* VALUATION CARD */
+.value-card {
     position: relative;
     overflow: hidden;
     min-height: 250px;
-    padding: 30px;
-    border-radius: 20px;
+    padding: 31px;
+    border-radius: 21px;
     background:
-        radial-gradient(circle at 100% 0%, rgba(53,147,255,.28), transparent 16rem),
-        radial-gradient(circle at 10% 100%, rgba(24,184,147,.18), transparent 17rem),
-        linear-gradient(135deg, #0e1730, #090e1c);
-    box-shadow: 0 22px 48px rgba(11,16,34,.20);
+        radial-gradient(circle at 100% 0%, rgba(54,151,255,.29), transparent 16rem),
+        radial-gradient(circle at 10% 100%, rgba(24,184,147,.17), transparent 17rem),
+        linear-gradient(135deg, #0e1730, #090e1d);
+    box-shadow: 0 23px 49px rgba(11,16,34,.22);
 }
 
-.result-label {
-    color: #92a0be;
+.value-label {
+    color: #91a0be;
     font-size: .66rem;
     font-weight: 700;
-    letter-spacing: .12em;
+    letter-spacing: .13em;
     text-transform: uppercase;
 }
 
-.result-price {
-    margin: 8px 0 5px;
+.value-price {
+    margin: 9px 0 5px;
     color: white;
     font-family: Manrope, sans-serif;
-    font-size: clamp(2.25rem, 4vw, 3.3rem);
+    font-size: clamp(2.25rem, 4vw, 3.4rem);
     font-weight: 800;
     letter-spacing: -.07em;
 }
 
-.result-sub {
-    color: #b3bdd2;
-    font-size: .78rem;
-}
+.value-sub { color: #b2bdd2; font-size: .78rem; }
 
-.badge-row {
+.value-badges {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 22px;
 }
 
-.badge {
+.value-badge {
     padding: 7px 9px;
     border: 1px solid rgba(255,255,255,.10);
     border-radius: 8px;
@@ -369,69 +366,168 @@ html, body, [class*="css"] {
     font-size: .66rem;
 }
 
+/* FORM / BUTTON */
+label, [data-testid="stWidgetLabel"] p {
+    color: #40495d !important;
+    font-size: .75rem !important;
+    font-weight: 700 !important;
+}
+
+[data-baseweb="select"] > div,
+[data-baseweb="input"] > div,
+.stTextInput input {
+    min-height: 43px;
+    border: 1px solid #dfe3ec !important;
+    border-radius: 12px !important;
+    background: #fbfcff !important;
+}
+
+[data-baseweb="select"] > div:focus-within,
+[data-baseweb="input"] > div:focus-within {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(102,92,246,.10) !important;
+}
+
+.stSlider [role="slider"] {
+    background: var(--accent) !important;
+    box-shadow: 0 0 0 4px rgba(102,92,246,.11);
+}
+
+.stButton > button,
+.stDownloadButton > button {
+    min-height: 43px;
+    border: 1px solid #dfe3ec;
+    border-radius: 12px;
+    background: white;
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: 0 7px 18px rgba(25,34,67,.05);
+}
+
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    border-color: #bdb8ff;
+    color: #5048db;
+    transform: translateY(-1px);
+}
+
+.stButton > button[kind="primary"] {
+    border: 0;
+    background: linear-gradient(110deg, #625bf6, #7b70fa);
+    color: white;
+    box-shadow: 0 12px 27px rgba(102,92,246,.28);
+}
+
+[data-testid="stDataFrame"],
+[data-testid="stPlotlyChart"] {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+}
+
+[data-testid="stTabs"] [data-baseweb="tab"] {
+    height: 42px;
+    border-radius: 10px;
+}
+
 .notice {
     display: flex;
     align-items: flex-start;
     gap: 9px;
-    padding: 12px 14px;
-    margin-top: 14px;
-    border: 1px solid #e6e8f1;
+    padding: 12px 13px;
+    margin-top: 13px;
+    border: 1px solid #e6e9f1;
     border-radius: 12px;
     background: #fafbff;
-    color: #697288;
+    color: var(--muted);
     font-size: .72rem;
-    line-height: 1.55;
+    line-height: 1.58;
 }
 
 .notice-icon {
     display: grid;
     place-items: center;
-    flex: 0 0 20px;
     width: 20px;
     height: 20px;
+    flex: 0 0 20px;
     border-radius: 7px;
-    background: var(--purple-soft);
-    color: var(--purple);
+    background: var(--accent-soft);
+    color: var(--accent);
     font-size: .7rem;
     font-weight: 800;
 }
 
-.stButton > button {
-    min-height: 44px;
-    border-radius: 12px;
-    font-weight: 700;
+.empty-state {
+    padding: 55px 25px;
+    border: 1px dashed #d8dce8;
+    border-radius: 18px;
+    background: rgba(255,255,255,.65);
+    text-align: center;
 }
 
-.stButton > button[kind="primary"] {
-    border: 0;
-    background: linear-gradient(105deg, #655bf6, #7b70fa);
-    box-shadow: 0 10px 25px rgba(102,92,246,.28);
+.empty-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 13px;
+    border-radius: 15px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 1.3rem;
 }
 
-[data-baseweb="select"] > div,
-[data-baseweb="input"] > div {
-    border-radius: 11px !important;
+.empty-title {
+    color: var(--ink);
+    font-family: Manrope, sans-serif;
+    font-weight: 800;
 }
 
-[data-testid="stDataFrame"] {
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: 14px;
+.empty-copy {
+    max-width: 470px;
+    margin: 6px auto 0;
+    color: var(--muted);
+    font-size: .74rem;
+    line-height: 1.6;
+}
+
+.winner-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px;
+    border: 1px solid #dcd9ff;
+    border-radius: 16px;
+    background: linear-gradient(105deg, #eeecff, #faf9ff);
+}
+
+.winner-title { color: #332d9b; font-size: .88rem; font-weight: 800; }
+.winner-copy { margin-top: 3px; color: #716cab; font-size: .70rem; }
+.winner-tag {
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    font-size: .64rem;
+    font-weight: 800;
 }
 
 .footer {
     margin-top: 32px;
     padding-top: 18px;
     border-top: 1px solid var(--line);
-    color: #8c93a4;
+    color: #8b92a4;
     text-align: center;
-    font-size: .68rem;
+    font-size: .67rem;
 }
 
-@media (max-width: 850px) {
+@media(max-width:850px) {
     .block-container { padding: 1rem .8rem 3rem; }
     .hero { min-height: auto; padding: 28px 23px; }
-    .hero h1 { font-size: 2.25rem; }
+    .hero:after { display: none; }
+    .hero h1 { font-size: 2.2rem; }
+    .section-rule { display: none; }
 }
 </style>
 """,
@@ -439,9 +535,9 @@ html, body, [class*="css"] {
 )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# HELPERS
-# ──────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
 
 @st.cache_data(show_spinner=False)
 def load_data() -> pd.DataFrame:
@@ -455,44 +551,49 @@ def load_model():
 
 @st.cache_data(show_spinner=False)
 def load_metadata() -> dict:
-    if METADATA_PATH.exists():
-        return json.loads(METADATA_PATH.read_text(encoding="utf-8"))
-    return {"selected_model": "Machine Learning Model", "dataset_rows": 0}
+    return json.loads(METADATA_PATH.read_text(encoding="utf-8"))
 
 
-def indian_number(value: float) -> str:
+def format_indian_number(value: float) -> str:
     if value is None or not math.isfinite(float(value)):
         return "—"
-    value = int(round(float(value)))
-    text = str(abs(value))
+
+    number = int(round(float(value)))
+    sign = "-" if number < 0 else ""
+    text = str(abs(number))
+
     if len(text) <= 3:
-        result = text
-    else:
-        result = text[-3:]
-        remaining = text[:-3]
-        groups = []
-        while remaining:
-            groups.insert(0, remaining[-2:])
-            remaining = remaining[:-2]
-        result = ",".join(groups + [result])
-    return f"-{result}" if value < 0 else result
+        return f"{sign}{text}"
+
+    final_group = text[-3:]
+    remaining = text[:-3]
+    groups = []
+
+    while remaining:
+        groups.insert(0, remaining[-2:])
+        remaining = remaining[:-2]
+
+    return f"{sign}{','.join(groups + [final_group])}"
 
 
-def format_price(value: float) -> str:
+def format_price(value: float | None) -> str:
     if value is None or not math.isfinite(float(value)):
         return "—"
+
     value = max(float(value), 0)
+
     if value >= 10_000_000:
         return f"₹{value / 10_000_000:.2f} Cr"
     if value >= 100_000:
         return f"₹{value / 100_000:.2f} Lakh"
-    return f"₹{indian_number(value)}"
+
+    return f"₹{format_indian_number(value)}"
 
 
-def price_per_sqft(value: float) -> str:
+def format_rate(value: float | None) -> str:
     if value is None or not math.isfinite(float(value)):
         return "—"
-    return f"₹{indian_number(value)} / sq.ft"
+    return f"₹{format_indian_number(value)} / sq.ft"
 
 
 def section(number: str, title: str, subtitle: str) -> None:
@@ -501,17 +602,39 @@ def section(number: str, title: str, subtitle: str) -> None:
         <div class="section-heading">
             <div class="section-number">{html.escape(number)}</div>
             <div>
-                <h2>{html.escape(title)}</h2>
-                <p>{html.escape(subtitle)}</p>
+                <div class="section-title">{html.escape(title)}</div>
+                <div class="section-copy">{html.escape(subtitle)}</div>
             </div>
-            <div class="section-line"></div>
+            <div class="section-rule"></div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def get_comparables(
+def hero(title: str, subtitle: str, eyebrow: str, pills: list[str]) -> None:
+    pills_html = "".join(
+        f'<span class="hero-pill">{html.escape(item)}</span>' for item in pills
+    )
+
+    st.markdown(
+        f"""
+        <div class="hero">
+            <div class="hero-content">
+                <div class="eyebrow">
+                    <span class="eyebrow-dot"></span>{html.escape(eyebrow)}
+                </div>
+                <h1>{html.escape(title)}</h1>
+                <p>{html.escape(subtitle)}</p>
+                <div class="hero-pills">{pills_html}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def market_comparables(
     data: pd.DataFrame,
     city: str,
     locality: str,
@@ -519,82 +642,121 @@ def get_comparables(
     bhk: int,
     count: int,
 ) -> tuple[pd.DataFrame, int]:
-    market = data[data["city"].astype(str).eq(str(city))].copy()
-    market["same_locality"] = market["location"].astype(str).eq(str(locality))
-    same_locality_count = int(market["same_locality"].sum())
+    market = data[data["city"].astype(str).eq(city)].copy()
+    market["same_locality"] = market["location"].astype(str).eq(locality)
+    exact_rows = int(market["same_locality"].sum())
 
     market["price_per_sqft"] = market["price"] / market["area"]
-    market["similarity"] = (
-        (market["area"] - float(area)).abs() / max(float(area), 1)
-        + (market["bhk"] - int(bhk)).abs() * 0.35
+    market["similarity_score"] = (
+        (market["area"] - area).abs() / max(area, 1)
+        + (market["bhk"] - bhk).abs() * 0.35
     )
 
     market = market.replace([float("inf"), -float("inf")], pd.NA)
-    market = market.dropna(subset=["price", "area", "price_per_sqft", "similarity"])
+    market = market.dropna(
+        subset=["price", "area", "price_per_sqft", "similarity_score"]
+    )
     market = market.sort_values(
-        ["same_locality", "similarity"],
+        ["same_locality", "similarity_score"],
         ascending=[False, True],
     )
 
-    return market.head(count).reset_index(drop=True), same_locality_count
+    return market.head(count).reset_index(drop=True), exact_rows
 
 
-def appreciation_chart(current_value: float, rate: float) -> go.Figure:
-    years = list(range(0, 11))
-    values = [current_value * ((1 + rate / 100) ** year) for year in years]
+def appreciation_chart(price: float, rate: float) -> go.Figure:
+    years = list(range(11))
+    values = [price * ((1 + rate / 100) ** year) for year in years]
 
-    fig = go.Figure()
-    fig.add_trace(
+    figure = go.Figure()
+
+    figure.add_trace(
         go.Scatter(
             x=years,
             y=values,
             mode="lines",
-            line=dict(color="#665cf6", width=3.5, shape="spline"),
+            line={"color": "#665cf6", "width": 3.5, "shape": "spline"},
             fill="tozeroy",
             fillcolor="rgba(102,92,246,.11)",
             hovertemplate="Year %{x}<br>₹%{y:,.0f}<extra></extra>",
         )
     )
-    fig.add_trace(
+
+    figure.add_trace(
         go.Scatter(
             x=[0, 5, 10],
             y=[values[0], values[5], values[10]],
             mode="markers",
-            marker=dict(size=10, color="#665cf6", line=dict(width=3, color="white")),
+            marker={"size": 10, "color": "#665cf6", "line": {"width": 3, "color": "white"}},
             hovertemplate="Year %{x}<br>₹%{y:,.0f}<extra></extra>",
             showlegend=False,
         )
     )
 
-    fig.update_layout(
-        height=320,
-        margin=dict(l=5, r=10, t=15, b=5),
+    figure.update_layout(
+        height=325,
+        margin={"l": 6, "r": 10, "t": 10, "b": 8},
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        showlegend=False,
+        font={"family": "DM Sans", "color": "#6c7589", "size": 11},
         hovermode="x unified",
-        font=dict(family="DM Sans", color="#697288", size=11),
-        xaxis=dict(
-            title="Years from today",
-            tickmode="array",
-            tickvals=[0, 2, 4, 6, 8, 10],
-            gridcolor="#eceef4",
-            zeroline=False,
-        ),
-        yaxis=dict(
-            title="Property value",
-            tickprefix="₹",
-            tickformat="~s",
-            gridcolor="#eceef4",
-            zeroline=False,
-        ),
+        showlegend=False,
+        xaxis={
+            "title": "Years from today",
+            "tickmode": "array",
+            "tickvals": [0, 2, 4, 6, 8, 10],
+            "gridcolor": "#eceef5",
+            "zeroline": False,
+        },
+        yaxis={
+            "title": "Property value",
+            "tickprefix": "₹",
+            "tickformat": "~s",
+            "gridcolor": "#eceef5",
+            "zeroline": False,
+        },
     )
-    return fig
+
+    return figure
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# SIDEBAR
-# ──────────────────────────────────────────────────────────────────────────────
+def style_chart(figure, height: int = 400):
+    figure.update_layout(
+        height=height,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font={"family": "DM Sans", "color": "#6c7589", "size": 11},
+        title={"font": {"color": "#151a2b", "size": 15}, "x": 0.02},
+        legend={"title": None, "orientation": "h", "y": 1.11, "x": 0},
+        margin={"l": 10, "r": 12, "t": 58, "b": 10},
+    )
+    figure.update_xaxes(gridcolor="#eceef5", zeroline=False)
+    figure.update_yaxes(gridcolor="#eceef5", zeroline=False)
+    return figure
+
+
+def get_history() -> list[dict]:
+    if "valuation_history" not in st.session_state:
+        st.session_state["valuation_history"] = []
+    return st.session_state["valuation_history"]
+
+
+# =============================================================================
+# APPLICATION LOAD
+# =============================================================================
+
+if not DATA_PATH.exists() or not MODEL_PATH.exists() or not METADATA_PATH.exists():
+    st.error("Missing data, model, or metadata files. Check the project folders.")
+    st.stop()
+
+data = load_data()
+model = load_model()
+metadata = load_metadata()
+
+
+# =============================================================================
+# SIDEBAR NAVIGATION
+# =============================================================================
 
 with st.sidebar:
     st.markdown(
@@ -603,7 +765,7 @@ with st.sidebar:
             <div class="brand-icon">G</div>
             <div>
                 <div class="brand-name">GharMulyankan</div>
-                <div class="brand-subtitle">Property intelligence for India</div>
+                <div class="brand-copy">Property intelligence for India</div>
             </div>
         </div>
         """,
@@ -612,403 +774,581 @@ with st.sidebar:
 
     st.markdown(
         """
-        <div class="sidebar-card">
-            <div class="sidebar-overline">Current workspace</div>
-            <div class="sidebar-title">AI Valuation Studio</div>
-            <div class="sidebar-copy">
-                Build a property profile, evaluate real market evidence,
-                and explore transparent future scenarios.
+        <div class="sidebar-status">
+            <div class="overline">Platform status</div>
+            <div class="sidebar-status-title">AI valuation system</div>
+            <div class="sidebar-status-copy">
+                Real market records, transparent comparable listings,
+                and interactive future-value scenarios.
             </div>
-            <div class="live"><span class="dot"></span>Valuation engine ready</div>
+            <div class="live"><span class="live-dot"></span>Model ready</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    st.markdown("### Quick navigation")
-    st.markdown("🏠 &nbsp; **Property valuation**")
-    st.markdown("📊 &nbsp; Market intelligence")
-    st.markdown("📈 &nbsp; Price scenarios")
+    selected_page = st.radio(
+        "Navigation",
+        ["🏠 Valuation Studio", "📊 Market Dashboard", "🕘 Saved Valuations", "🧠 Model Performance"],
+        label_visibility="collapsed",
+    )
+
     st.markdown("---")
-    st.caption("Estimates support informed decisions. Confirm final property values with local professionals.")
+    st.caption("Educational estimates only. Verify final prices through qualified local property professionals.")
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# LOAD DATA
-# ──────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# PAGE: VALUATION STUDIO
+# =============================================================================
 
-if not DATA_PATH.exists() or not MODEL_PATH.exists():
-    st.error("Required files are missing. Ensure `data/india_housing.csv` and `models/best_model.joblib` exist.")
-    st.stop()
-
-try:
-    data = load_data()
-    model = load_model()
-    metadata = load_metadata()
-except Exception as error:
-    st.error(f"Unable to load application resources: {error}")
-    st.stop()
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# HERO
-# ──────────────────────────────────────────────────────────────────────────────
-
-st.markdown(
-    f"""
-    <div class="hero">
-        <div class="hero-content">
-            <div class="eyebrow"><span></span>AI-assisted property valuation</div>
-            <h1>Know the number behind your address.</h1>
-            <p>
-                Transform property details into a clear market estimate,
-                real comparable evidence, and future-value scenarios for smarter decisions.
-            </p>
-            <div class="hero-pills">
-                <div class="hero-pill">{len(data):,} real listings</div>
-                <div class="hero-pill">{data["city"].nunique()} city markets</div>
-                <div class="hero-pill">Transparent comparisons</div>
-                <div class="hero-pill">Instant future scenarios</div>
-            </div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# PROPERTY FORM
-# ──────────────────────────────────────────────────────────────────────────────
-
-section("01", "Select the market", "Choose the city and locality where the property is located.")
-
-with st.container(border=True):
-    c1, c2, c3 = st.columns([1, 1.6, 0.8], gap="medium")
-
-    cities = sorted(data["city"].dropna().astype(str).unique())
-    city = c1.selectbox("City market", cities)
-
-    city_data = data[data["city"].astype(str).eq(city)]
-    locality_counts = city_data.groupby("location").size().sort_values(ascending=False)
-    localities = locality_counts.index.astype(str).tolist()
-
-    locality = c2.selectbox("Locality / nearby market", localities)
-    comparable_count = c3.selectbox("Comparables", [5, 10, 15, 20, 30], index=1)
-
-    locality_rows = int(locality_counts.get(locality, 0))
-    st.markdown(
-        f"""
-        <div class="notice">
-            <div class="notice-icon">i</div>
-            <div>
-                <b>{locality_rows:,} listing records</b> are available for
-                {html.escape(locality)}. Exact-locality listings are prioritised,
-                then similar homes from {html.escape(city)} are used when needed.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+if selected_page == "🏠 Valuation Studio":
+    hero(
+        "Know the number behind the address.",
+        "Build a property profile, compare real listings, and explore future-value scenarios before making your next property decision.",
+        "AI-assisted property valuation",
+        [f"{len(data):,} real listings", f"{data['city'].nunique()} city markets", "Instant scenario planning"],
     )
 
-section("02", "Describe the property", "The model updates your estimate using these property attributes.")
+    section("01", "Select your market", "Start with the city and locality of the property.")
 
-with st.container(border=True):
-    left, right = st.columns(2, gap="large")
+    with st.container(border=True):
+        one, two, three = st.columns([1, 1.55, .8], gap="medium")
 
-    with left:
-        area = st.slider("Built-up area (sq.ft)", 250, 10000, 1200, 50)
-        bhk = st.slider("Bedrooms / BHK", 1, 10, 2, 1)
-        bathrooms = st.slider("Bathrooms", 1, 10, 2, 1)
+        cities = sorted(data["city"].dropna().astype(str).unique())
+        city = one.selectbox("City market", cities)
 
-    with right:
-        parking = st.slider("Parking spaces", 0, 6, 1, 1)
-        property_age = st.slider("Property age (years)", 0, 80, 5, 1)
+        city_data = data[data["city"].astype(str).eq(city)]
+        locality_counts = city_data.groupby("location").size().sort_values(ascending=False)
+        locality = two.selectbox("Locality / nearby market", locality_counts.index.tolist())
+        comparable_count = three.selectbox("Comparables", [5, 10, 15, 20, 30, 50], index=1)
 
-        a, b = st.columns(2)
-        furnishing = a.selectbox(
-            "Furnishing",
-            ["Unfurnished", "Semifurnished", "Furnished", "Unknown"],
-        )
-        property_type = b.selectbox(
-            "Property type",
-            ["Apartment", "Builder Floor", "Villa", "Independent House", "Unknown"],
-        )
-
-    st.markdown(
-        """
-        <div class="notice">
-            <div class="notice-icon">✓</div>
-            <div>
-                Your values are evaluated with the trained preprocessing pipeline.
-                Missing source attributes are handled by the model pipeline without fabricated values.
+        records = int(locality_counts.get(locality, 0))
+        st.markdown(
+            f"""
+            <div class="notice">
+                <div class="notice-icon">i</div>
+                <div>
+                    <b>{records:,} locality records</b> are available for {html.escape(locality)}.
+                    Exact-locality listings are prioritised before matching similar homes from {html.escape(city)}.
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+            """,
+            unsafe_allow_html=True,
+        )
+
+    section("02", "Describe the property", "Adjust the details to generate a personalised valuation.")
+
+    with st.container(border=True):
+        left, right = st.columns(2, gap="large")
+
+        with left:
+            area = st.slider("Built-up area (sq.ft)", 250, 10000, 1200, 50)
+            bhk = st.slider("Bedrooms / BHK", 1, 10, 2)
+            bathrooms = st.slider("Bathrooms", 1, 10, 2)
+
+        with right:
+            parking = st.slider("Parking spaces", 0, 6, 1)
+            age = st.slider("Property age (years)", 0, 80, 5)
+
+            first, second = st.columns(2)
+            furnishing = first.selectbox(
+                "Furnishing",
+                ["Unfurnished", "Semifurnished", "Furnished", "Unknown"],
+            )
+            property_type = second.selectbox(
+                "Property type",
+                ["Apartment", "Builder Floor", "Villa", "Independent House", "Unknown"],
+            )
+
+    model_input = pd.DataFrame(
+        [{
+            "city": city,
+            "location": locality,
+            "area": float(area),
+            "bhk": float(bhk),
+            "bathrooms": float(bathrooms),
+            "parking": float(parking),
+            "property_age": float(age),
+            "furnishing": furnishing,
+            "property_type": property_type,
+        }]
     )
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# MODEL PREDICTION
-# ──────────────────────────────────────────────────────────────────────────────
-
-model_input = pd.DataFrame(
-    [{
-        "city": city,
-        "location": locality,
-        "area": float(area),
-        "bhk": float(bhk),
-        "bathrooms": float(bathrooms),
-        "parking": float(parking),
-        "property_age": float(property_age),
-        "furnishing": furnishing,
-        "property_type": property_type,
-    }]
-)
-
-try:
-    prediction = max(0.0, float(model.predict(model_input)[0]))
-except Exception as error:
-    st.error(f"Prediction failed: {error}")
-    st.stop()
-
-comparables, exact_locality_count = get_comparables(
-    data, city, locality, area, bhk, comparable_count
-)
-
-market_average = float(comparables["price"].mean()) if not comparables.empty else None
-market_median = float(comparables["price"].median()) if not comparables.empty else None
-market_rate = float(comparables["price_per_sqft"].mean()) if not comparables.empty else None
-predicted_rate = prediction / area if area else 0
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# RESULT
-# ──────────────────────────────────────────────────────────────────────────────
-
-section("03", "Current valuation", f"Powered by {metadata.get('selected_model', 'Machine Learning Model')}")
-
-result_col, metric_col = st.columns([1.13, 1], gap="medium")
-
-with result_col:
-    evidence = "Strong locality evidence" if exact_locality_count >= 10 else "Limited locality evidence"
-
-    st.markdown(
-        f"""
-        <div class="result-card">
-            <div class="result-label">Estimated current market value</div>
-            <div class="result-price">{format_price(prediction)}</div>
-            <div class="result-sub">{price_per_sqft(predicted_rate)} · {html.escape(city)}</div>
-            <div class="badge-row">
-                <div class="badge">● {evidence}</div>
-                <div class="badge">{len(comparables)} comparables analysed</div>
-                <div class="badge">{html.escape(property_type)}</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    predicted_price = max(0.0, float(model.predict(model_input)[0]))
+    predicted_rate = predicted_price / area
+    comparables, exact_rows = market_comparables(
+        data, city, locality, area, bhk, comparable_count
     )
 
-with metric_col:
-    x1, x2 = st.columns(2)
-    x1.metric("Comparable average", format_price(market_average))
-    x2.metric("Comparable median", format_price(market_median))
+    average_price = float(comparables["price"].mean()) if not comparables.empty else None
+    average_rate = float(comparables["price_per_sqft"].mean()) if not comparables.empty else None
+    evidence = "Strong locality evidence" if exact_rows >= 10 else "Limited locality evidence"
 
-    x3, x4 = st.columns(2)
-    x3.metric("Market ₹ / sq.ft", price_per_sqft(market_rate))
-    x4.metric("Exact-locality rows", f"{exact_locality_count:,}")
+    section("03", "Current valuation", f"Powered by {metadata['selected_model']}")
 
-    difference = prediction - market_average if market_average else 0
-    direction = "above" if difference >= 0 else "below"
+    result_col, metrics_col = st.columns([1.12, 1], gap="medium")
 
-    st.markdown(
-        f"""
-        <div class="notice">
-            <div class="notice-icon">↗</div>
-            <div>
-                The estimated value is <b>{format_price(abs(difference))}</b> {direction}
-                the selected comparable average.
+    with result_col:
+        st.markdown(
+            f"""
+            <div class="value-card">
+                <div class="value-label">Estimated current market value</div>
+                <div class="value-price">{format_price(predicted_price)}</div>
+                <div class="value-sub">{format_rate(predicted_rate)} · {html.escape(city)}</div>
+                <div class="value-badges">
+                    <span class="value-badge">● {evidence}</span>
+                    <span class="value-badge">{len(comparables)} comparables analysed</span>
+                    <span class="value-badge">{html.escape(property_type)}</span>
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# FUTURE SCENARIO
-# ──────────────────────────────────────────────────────────────────────────────
-
-section("04", "Future value scenario", "Test a transparent appreciation assumption; this is not a guaranteed forecast.")
-
-with st.container(border=True):
-    scenario_col, chart_col = st.columns([0.70, 1.55], gap="large")
-
-    with scenario_col:
-        growth_rate = st.slider(
-            "Annual appreciation assumption",
-            min_value=0.0,
-            max_value=15.0,
-            value=6.0,
-            step=0.5,
-            format="%.1f%% per year",
+            """,
+            unsafe_allow_html=True,
         )
 
-        price_5y = prediction * ((1 + growth_rate / 100) ** 5)
-        price_10y = prediction * ((1 + growth_rate / 100) ** 10)
+    with metrics_col:
+        m1, m2 = st.columns(2)
+        m1.metric("Comparable average", format_price(average_price))
+        m2.metric("Comparable rate", format_rate(average_rate))
 
-        st.metric("Estimated after 5 years", format_price(price_5y), format_price(price_5y - prediction))
-        st.metric("Estimated after 10 years", format_price(price_10y), format_price(price_10y - prediction))
+        m3, m4 = st.columns(2)
+        m3.metric("Listings used", len(comparables))
+        m4.metric("Exact locality rows", exact_rows)
 
-    with chart_col:
-        st.plotly_chart(
-            appreciation_chart(prediction, growth_rate),
-            use_container_width=True,
-            config={"displayModeBar": False},
+        difference = predicted_price - average_price if average_price else 0
+        st.markdown(
+            f"""
+            <div class="notice">
+                <div class="notice-icon">↗</div>
+                <div>
+                    This estimate is <b>{format_price(abs(difference))}</b>
+                    {"above" if difference >= 0 else "below"} the selected comparable average.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
+    section("04", "Future value scenario", "Explore possible value growth; this is a scenario, not a guarantee.")
 
-# ──────────────────────────────────────────────────────────────────────────────
-# COMPARABLE TABLE
-# ──────────────────────────────────────────────────────────────────────────────
+    with st.container(border=True):
+        controls, chart = st.columns([.7, 1.55], gap="large")
 
-section("05", "Comparable evidence", "Only real listing records from the selected city market are shown.")
+        with controls:
+            appreciation = st.slider(
+                "Annual appreciation assumption",
+                0.0, 15.0, 6.0, .5,
+                format="%.1f%% per year",
+            )
 
-if comparables.empty:
-    st.info("No comparable listing records are available for this market.")
-else:
-    table = comparables[
-        [
-            "location",
-            "same_locality",
-            "area",
-            "bhk",
-            "bathrooms",
-            "property_type",
-            "price",
-            "price_per_sqft",
+            five_year = predicted_price * ((1 + appreciation / 100) ** 5)
+            ten_year = predicted_price * ((1 + appreciation / 100) ** 10)
+
+            st.metric("After 5 years", format_price(five_year), format_price(five_year - predicted_price))
+            st.metric("After 10 years", format_price(ten_year), format_price(ten_year - predicted_price))
+
+        with chart:
+            st.plotly_chart(
+                appreciation_chart(predicted_price, appreciation),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
+
+    if st.button("Save this valuation to current session", type="primary", use_container_width=True):
+        get_history().insert(
+            0,
+            {
+                "id": uuid4().hex[:10],
+                "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "city": city,
+                "location": locality,
+                "area": area,
+                "bhk": bhk,
+                "bathrooms": bathrooms,
+                "parking": parking,
+                "property_age": age,
+                "furnishing": furnishing,
+                "property_type": property_type,
+                "predicted_price": predicted_price,
+                "nearby_average_price": average_price,
+                "nearby_price_per_sqft": average_rate,
+                "projected_price_5y": five_year,
+                "projected_price_10y": ten_year,
+                "annual_growth_rate": appreciation,
+                "houses_found": len(comparables),
+                "model_name": metadata["selected_model"],
+            },
+        )
+        st.toast("Valuation saved successfully.", icon="✅")
+
+    section("05", "Comparable evidence", "Only real listings from the selected market are shown.")
+
+    if comparables.empty:
+        st.info("No comparable listing records are available for this market.")
+    else:
+        table = comparables[
+            ["location", "same_locality", "area", "bhk", "bathrooms", "property_type", "price", "price_per_sqft"]
+        ].copy()
+
+        table["same_locality"] = table["same_locality"].map(
+            {True: "Exact locality", False: f"Other {city} locality"}
+        )
+
+        table.columns = [
+            "Location", "Match", "Area (sq.ft)", "BHK", "Bathrooms",
+            "Property type", "Price", "₹ / sq.ft",
         ]
-    ].copy()
 
-    table["same_locality"] = table["same_locality"].map(
-        {
-            True: "Exact locality",
-            False: f"Other {city} locality",
-        }
+        st.dataframe(
+            table,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "Area (sq.ft)": st.column_config.NumberColumn(format="%d"),
+                "Price": st.column_config.NumberColumn(format="₹ %d"),
+                "₹ / sq.ft": st.column_config.NumberColumn(format="₹ %d"),
+            },
+        )
+
+
+# =============================================================================
+# PAGE: MARKET DASHBOARD
+# =============================================================================
+
+elif selected_page == "📊 Market Dashboard":
+    hero(
+        "Make your next move with market clarity.",
+        "Explore supply, locality coverage, property mix, price distribution, and market behaviour across real Indian listings.",
+        "Live market intelligence",
+        ["Interactive charts", "Locality analytics", "Real market records"],
     )
 
-    table.columns = [
-        "Location",
-        "Match",
-        "Area (sq.ft)",
-        "BHK",
-        "Bathrooms",
-        "Property type",
-        "Price",
-        "₹ / sq.ft",
-    ]
+    with st.container(border=True):
+        left, right = st.columns([1, 2], gap="large")
+        cities = ["All city markets"] + sorted(data["city"].dropna().astype(str).unique())
+        dashboard_city = left.selectbox("Choose market", cities, key="dashboard_city")
+        right.markdown(
+            '<div class="notice"><div class="notice-icon">i</div><div>All insights and metrics update together when you choose a market.</div></div>',
+            unsafe_allow_html=True,
+        )
 
-    st.dataframe(
-        table,
-        hide_index=True,
-        use_container_width=True,
-        column_config={
-            "Area (sq.ft)": st.column_config.NumberColumn(format="%d"),
-            "Price": st.column_config.NumberColumn(format="₹ %d"),
-            "₹ / sq.ft": st.column_config.NumberColumn(format="₹ %d"),
-        },
-    )
+    view = data if dashboard_city == "All city markets" else data[data["city"].astype(str).eq(dashboard_city)]
 
+    a, b, c, d = st.columns(4)
+    a.metric("Visible listings", f"{len(view):,}")
+    b.metric("Localities covered", f"{view['location'].nunique():,}")
+    c.metric("Median price", format_price(float(view["price"].median())))
+    d.metric("Average area", f"{int(view['area'].mean()):,} sq.ft")
 
-# ──────────────────────────────────────────────────────────────────────────────
-# MARKET SNAPSHOT
-# ──────────────────────────────────────────────────────────────────────────────
+    section("01", "Market overview", "Supply coverage and price distribution.")
 
-section("06", "Market snapshot", f"Real listing patterns across {city}.")
+    left_chart, right_chart = st.columns(2, gap="large")
 
-chart_data = city_data.dropna(subset=["price", "area", "property_type"]).copy()
+    with left_chart:
+        locality_data = (
+            view.groupby("location", as_index=False)
+            .agg(listings=("price", "size"), median_price=("price", "median"))
+            .sort_values(["listings", "median_price"], ascending=False)
+            .head(12)
+            .sort_values("listings")
+        )
 
-if len(chart_data) > 2500:
-    chart_data = chart_data.sample(2500, random_state=42)
+        figure = px.bar(
+            locality_data,
+            x="listings",
+            y="location",
+            orientation="h",
+            color="median_price",
+            color_continuous_scale=["#dfdcff", "#948cff", "#4c42d7"],
+            labels={"listings": "Listing count", "location": "", "median_price": "Median price"},
+            title="Most represented localities",
+        )
+        style_chart(figure, 420)
+        figure.update_coloraxes(showscale=False)
+        st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
 
-chart_data["Price (Lakh)"] = chart_data["price"] / 100_000
+    with right_chart:
+        limit = view["price"].quantile(.99)
+        distribution = view.loc[view["price"] <= limit, ["price"]].copy()
+        distribution["Price (Lakh)"] = distribution["price"] / 100_000
 
-chart_left, chart_right = st.columns(2, gap="large")
+        figure = px.histogram(
+            distribution,
+            x="Price (Lakh)",
+            nbins=35,
+            color_discrete_sequence=["#665cf6"],
+            title="Listing price distribution",
+        )
+        style_chart(figure, 420)
+        figure.update_traces(marker_line_width=0, opacity=.88)
+        st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
 
-with chart_left:
-    scatter = px.scatter(
-        chart_data,
+    section("02", "Area and price relationship", "A sample of real records, capped for visual performance.")
+
+    plot_data = view.dropna(subset=["area", "price", "property_type"]).copy()
+    if len(plot_data) > 3000:
+        plot_data = plot_data.sample(3000, random_state=42)
+
+    plot_data["Price (Lakh)"] = plot_data["price"] / 100_000
+
+    figure = px.scatter(
+        plot_data,
         x="area",
         y="Price (Lakh)",
         color="property_type",
         hover_name="location",
-        opacity=0.58,
-        labels={
-            "area": "Built-up area (sq.ft)",
-            "property_type": "Property type",
-        },
-        color_discrete_sequence=["#665cf6", "#18b893", "#f1a83a", "#ef6c8b", "#4a98e8"],
+        opacity=.58,
+        color_discrete_sequence=["#665cf6", "#18b893", "#efa52e", "#e95c85", "#4e9bea"],
+        labels={"area": "Built-up area (sq.ft)", "property_type": "Property type"},
+        title="How built-up area relates to listing value",
+    )
+    style_chart(figure, 470)
+    st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
+
+    section("03", "Market composition", "Property types and bedroom configurations.")
+
+    first, second = st.columns(2, gap="large")
+
+    with first:
+        types = view["property_type"].fillna("Unknown").value_counts().reset_index()
+        types.columns = ["Property type", "Listings"]
+
+        figure = px.pie(
+            types,
+            names="Property type",
+            values="Listings",
+            hole=.62,
+            color_discrete_sequence=["#665cf6", "#18b893", "#efa52e", "#e95c85", "#4e9bea"],
+            title="Property type distribution",
+        )
+        style_chart(figure, 360)
+        st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
+
+    with second:
+        bhk_data = view["bhk"].dropna().astype(int).value_counts().sort_index().reset_index()
+        bhk_data.columns = ["BHK", "Listings"]
+
+        figure = px.bar(
+            bhk_data,
+            x="BHK",
+            y="Listings",
+            color_discrete_sequence=["#665cf6"],
+            title="Bedroom configuration availability",
+        )
+        style_chart(figure, 360)
+        figure.update_traces(marker_line_width=0)
+        st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
+
+
+# =============================================================================
+# PAGE: SAVED VALUATIONS
+# =============================================================================
+
+elif selected_page == "🕘 Saved Valuations":
+    hero(
+        "Your valuation library, organised.",
+        "Compare saved estimates, track your property research, export your records, and manage your current session.",
+        "Private valuation history",
+        ["Session storage", "CSV export", "Trend comparison"],
     )
 
-    scatter.update_layout(
-        title="Area and price relationship",
-        height=410,
-        margin=dict(l=10, r=10, t=55, b=10),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="DM Sans", color="#687187"),
-        legend=dict(orientation="h", y=1.12, x=0),
+    history = pd.DataFrame(get_history())
+
+    if history.empty:
+        st.markdown(
+            """
+            <div class="empty-state">
+                <div class="empty-icon">＋</div>
+                <div class="empty-title">No saved valuations yet</div>
+                <div class="empty-copy">
+                    Create an estimate in Valuation Studio and select
+                    “Save this valuation to current session”.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        cities = ["All saved markets"] + sorted(history["city"].dropna().astype(str).unique())
+
+        with st.container(border=True):
+            selected_city = st.selectbox("Filter saved valuations", cities)
+
+        visible = history if selected_city == "All saved markets" else history[
+            history["city"].astype(str).eq(selected_city)
+        ]
+
+        a, b, c, d = st.columns(4)
+        a.metric("Visible valuations", len(visible))
+        b.metric("Average estimate", format_price(float(visible["predicted_price"].mean())))
+        c.metric("Highest estimate", format_price(float(visible["predicted_price"].max())))
+        d.metric("Average 10-year value", format_price(float(visible["projected_price_10y"].mean())))
+
+        section("01", "Valuation trend", "The estimates you saved in this session.")
+
+        trend = visible.sort_values("created_at").copy()
+        trend["Saved at"] = pd.to_datetime(trend["created_at"], errors="coerce")
+        trend["Price (Lakh)"] = trend["predicted_price"] / 100_000
+
+        figure = px.line(
+            trend,
+            x="Saved at",
+            y="Price (Lakh)",
+            markers=True,
+            hover_name="location",
+            color_discrete_sequence=["#665cf6"],
+            title="Saved valuation trend",
+        )
+        style_chart(figure, 370)
+        figure.update_traces(line_width=3, marker_size=8)
+        st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
+
+        section("02", "Saved valuation records", "Compare current and future values side by side.")
+
+        display = visible[
+            [
+                "id", "created_at", "city", "location", "area", "bhk",
+                "bathrooms", "property_type", "predicted_price",
+                "projected_price_5y", "projected_price_10y",
+                "annual_growth_rate", "houses_found",
+            ]
+        ].copy()
+
+        display.columns = [
+            "ID", "Saved at", "City", "Location", "Area (sq.ft)", "BHK",
+            "Bathrooms", "Type", "Current estimate", "5-year scenario",
+            "10-year scenario", "Growth rate", "Comparables",
+        ]
+
+        st.dataframe(
+            display,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "Current estimate": st.column_config.NumberColumn(format="₹ %d"),
+                "5-year scenario": st.column_config.NumberColumn(format="₹ %d"),
+                "10-year scenario": st.column_config.NumberColumn(format="₹ %d"),
+                "Growth rate": st.column_config.NumberColumn(format="%.1f%%"),
+                "Area (sq.ft)": st.column_config.NumberColumn(format="%d"),
+            },
+        )
+
+        st.download_button(
+            "Download saved valuations as CSV",
+            visible.to_csv(index=False).encode("utf-8"),
+            file_name="ghar_mulyankan_valuations.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+
+        section("03", "History controls", "Remove the saved estimates from this session.")
+
+        if st.button("Clear saved valuation session", use_container_width=True):
+            st.session_state["valuation_history"] = []
+            st.toast("Saved valuation history cleared.", icon="✅")
+            st.rerun()
+
+
+# =============================================================================
+# PAGE: MODEL PERFORMANCE
+# =============================================================================
+
+elif selected_page == "🧠 Model Performance":
+    hero(
+        "Performance you can inspect, not assume.",
+        "Review test-set performance, model selection logic, input features, and exact metrics from the latest training run.",
+        "Transparent AI diagnostics",
+        ["Held-out test split", "Measured accuracy", "Selection logic"],
     )
-    scatter.update_xaxes(gridcolor="#eceef4", zeroline=False)
-    scatter.update_yaxes(gridcolor="#eceef4", zeroline=False)
 
-    with st.container(border=True):
-        st.plotly_chart(scatter, use_container_width=True, config={"displayModeBar": False})
+    metrics = pd.DataFrame(metadata["metrics"]).T.reset_index(names="Model")
 
-with chart_right:
-    location_data = (
-        city_data.groupby("location", as_index=False)
-        .agg(listings=("price", "size"), median_price=("price", "median"))
-        .sort_values("listings", ascending=False)
-        .head(12)
-        .sort_values("listings")
+    a, b, c, d = st.columns(4)
+    a.metric("Selected model", metadata["selected_model"])
+    b.metric("Dataset rows", f"{metadata['dataset_rows']:,}")
+    c.metric("Training rows", f"{metadata['training_rows']:,}")
+    d.metric("Test rows", f"{metadata['test_rows']:,}")
+
+    st.markdown(
+        f"""
+        <div class="winner-banner">
+            <div>
+                <div class="winner-title">Production model · {html.escape(metadata["selected_model"])}</div>
+                <div class="winner-copy">{html.escape(metadata["selection_rule"])}</div>
+            </div>
+            <div class="winner-tag">BEST TEST RMSE</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    bars = px.bar(
-        location_data,
-        x="listings",
-        y="location",
-        orientation="h",
-        color="median_price",
-        color_continuous_scale=["#dedbff", "#938cff", "#4c42d7"],
-        labels={
-            "listings": "Listing count",
-            "location": "",
-            "median_price": "Median price",
-        },
-    )
+    section("01", "Held-out test comparison", "Lower error is better; higher R² is better.")
 
-    bars.update_layout(
-        title="Most represented localities",
-        height=410,
-        margin=dict(l=10, r=10, t=55, b=10),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="DM Sans", color="#687187"),
-        coloraxis_showscale=False,
-    )
-    bars.update_xaxes(gridcolor="#eceef4", zeroline=False)
-    bars.update_yaxes(gridcolor="#eceef4", zeroline=False)
+    left, right = st.columns([1.5, 1], gap="large")
 
-    with st.container(border=True):
-        st.plotly_chart(bars, use_container_width=True, config={"displayModeBar": False})
+    with left:
+        error_data = metrics.melt(
+            id_vars="Model",
+            value_vars=["MAE", "RMSE"],
+            var_name="Metric",
+            value_name="Rupees",
+        )
+        error_data["Error (Lakh)"] = error_data["Rupees"] / 100_000
+
+        figure = px.bar(
+            error_data,
+            x="Model",
+            y="Error (Lakh)",
+            color="Metric",
+            barmode="group",
+            color_discrete_map={"MAE": "#665cf6", "RMSE": "#18b893"},
+            title="Prediction error on test records",
+        )
+        style_chart(figure, 420)
+        figure.update_traces(marker_line_width=0)
+        st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
+
+    with right:
+        figure = px.bar(
+            metrics,
+            x="Model",
+            y="R2",
+            text=metrics["R2"].map(lambda value: f"{value:.3f}"),
+            color="Model",
+            color_discrete_sequence=["#665cf6", "#aaa5ff"],
+            title="R² score",
+        )
+        style_chart(figure, 420)
+        figure.update_layout(showlegend=False)
+        figure.update_traces(textposition="outside")
+        st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
+
+    section("02", "Exact model scorecard", "Values are read directly from model metadata.")
+
+    table = metrics.copy()
+    table["MAE"] = table["MAE"].map(format_price)
+    table["RMSE"] = table["RMSE"].map(format_price)
+    table["R²"] = table.pop("R2").map(lambda value: f"{value:.4f}")
+
+    st.dataframe(table, hide_index=True, use_container_width=True)
+
+    section("03", "Training details", "Model coverage and feature inputs.")
+
+    left, right = st.columns(2, gap="large")
+
+    with left:
+        st.subheader("Selection rule")
+        st.write(metadata["selection_rule"])
+        st.caption(f"Trained at: {metadata.get('trained_at_utc', 'Not available')}")
+
+    with right:
+        st.subheader("Prediction inputs")
+        st.write(", ".join(metadata.get("features", [])))
 
 
 st.markdown(
     """
     <div class="footer">
-        GharMulyankan · AI-assisted property valuation for India ·
+        GharMulyankan · AI-assisted property intelligence for India ·
         Verify final property values with a qualified local professional.
     </div>
     """,
