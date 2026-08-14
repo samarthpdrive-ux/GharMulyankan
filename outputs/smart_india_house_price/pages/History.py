@@ -1,45 +1,35 @@
-"""Prediction history stored privately in the visitor's browser."""
+"""Private browser valuation library with export and email delivery."""
 
 from __future__ import annotations
-
-import html
-import json
-import os
-import re
-import time
+import html, json, os, re, time
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from uuid import uuid4
-
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-
 from utils.browser_storage import browser_history
 from utils.price_utils import format_price, format_price_per_sqft
 from utils.ui_utils import (
     apply_page_style,
-    complete_loading_shell,
+    info_line,
     section_header,
     show_hero,
-    show_loading_shell,
     show_sidebar,
     style_plotly,
 )
 
-
-EMAIL_COOLDOWN_SECONDS = 60
 BREVO_EMAIL_URL = "https://api.brevo.com/v3/smtp/email"
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+EMAIL_COOLDOWN_SECONDS = 60
 
 
 class EmailDeliveryError(RuntimeError):
-    """Raised when Brevo cannot send the selected valuation."""
+    pass
 
 
-def get_email_setting(name: str, default: str = "") -> str:
-    """Read a private setting from Render or local Streamlit secrets."""
+def setting(name: str, default: str = "") -> str:
     value = os.getenv(name, "").strip()
     if value:
         return value
@@ -49,62 +39,34 @@ def get_email_setting(name: str, default: str = "") -> str:
         return default
 
 
-def safe_text(value: Any) -> str:
-    """Escape values before placing them in the HTML email."""
+def safe(value: Any) -> str:
     return html.escape(str(value if value is not None else "Not available"))
 
 
-def send_valuation_email(recipient: str, report: dict[str, Any]) -> None:
-    """Send one saved valuation using Brevo's server-side HTTPS API."""
+def send_email(recipient: str, report: dict[str, Any]) -> None:
     recipient = recipient.strip().lower()
     if not EMAIL_PATTERN.fullmatch(recipient):
         raise EmailDeliveryError("Enter a valid email address.")
-
-    api_key = get_email_setting("BREVO_API_KEY")
-    sender_email = get_email_setting("BREVO_SENDER_EMAIL")
-    sender_name = get_email_setting("BREVO_SENDER_NAME", "GharMulyankan")
+    api_key, sender_email, sender_name = (
+        setting("BREVO_API_KEY"),
+        setting("BREVO_SENDER_EMAIL"),
+        setting("BREVO_SENDER_NAME", "GharMulyankan"),
+    )
     if not api_key or not sender_email:
         raise EmailDeliveryError(
-            "Add BREVO_API_KEY and BREVO_SENDER_EMAIL in Render Environment."
+            "Add BREVO_API_KEY and BREVO_SENDER_EMAIL to the deployment environment."
         )
-
-    email_html = f"""
-    <html><body style="font-family:Arial,sans-serif;background:#f3f5fa;padding:24px;color:#141a2a">
-      <div style="max-width:620px;margin:auto;background:white;border-radius:16px;padding:26px">
-        <div style="background:#0d1427;color:white;border-radius:14px;padding:24px">
-          <div style="font-size:12px;color:#b9b5ff">GHARMULYANKAN</div>
-          <h1 style="margin:8px 0">Property valuation</h1>
-          <div>{safe_text(report['location'])}, {safe_text(report['city'])}</div>
-          <h2 style="font-size:32px;margin-bottom:0">
-            {safe_text(format_price(float(report['predicted_price'])))}
-          </h2>
-        </div>
-        <h2>Property details</h2>
-        <p>Area: {safe_text(report['area'])} sq.ft | BHK: {safe_text(report['bhk'])}
-        | Bathrooms: {safe_text(report['bathrooms'])}</p>
-        <p>Parking: {safe_text(report['parking'])} | Age: {safe_text(report['property_age'])} years</p>
-        <p>Furnishing: {safe_text(report['furnishing'])} | Type: {safe_text(report['property_type'])}</p>
-        <h2>Market and future scenario</h2>
-        <p>Comparable average: {safe_text(format_price(float(report['nearby_average_price'])))}</p>
-        <p>Comparable rate: {safe_text(format_price_per_sqft(float(report['nearby_price_per_sqft'])))}</p>
-        <p>Listings analysed: {safe_text(report['houses_found'])}</p>
-        <p>5-year scenario: {safe_text(format_price(float(report['projected_price_5y'])))}</p>
-        <p>10-year scenario: {safe_text(format_price(float(report['projected_price_10y'])))}</p>
-        <p>Growth assumption: {float(report['annual_growth_rate']):.1f}% per year</p>
-        <p style="font-size:12px;color:#6d7588">Educational estimate only. Future values are
-        what-if scenarios and are not guaranteed sale prices.</p>
-      </div>
-    </body></html>
-    """
-    payload = {
-        "sender": {"name": sender_name, "email": sender_email},
-        "to": [{"email": recipient}],
-        "subject": f"Your property valuation - {report['location']}",
-        "htmlContent": email_html,
-    }
+    body = f"""<html><body style="margin:0;background:#070b16;padding:30px;font-family:Arial;color:#eef1ff"><div style="max-width:650px;margin:auto;background:#111a30;border:1px solid #293451;border-radius:22px;overflow:hidden"><div style="padding:34px;background:linear-gradient(135deg,#1b2854,#6757e8)"><div style="font-size:11px;letter-spacing:2px;color:#d7d2ff">GHARMULYANKAN · PRIVATE REPORT</div><h1 style="margin:12px 0 6px">{safe(report['location'])}, {safe(report['city'])}</h1><div style="font-size:38px;font-weight:800">{safe(format_price(float(report['predicted_price'])))}</div></div><div style="padding:30px;color:#c7cfe0"><h2 style="color:white">Property profile</h2><p>{safe(report['area'])} sq.ft · {safe(report['bhk'])} BHK · {safe(report['bathrooms'])} bathrooms · {safe(report['property_type'])}</p><p>Parking {safe(report['parking'])} · Age {safe(report['property_age'])} years · {safe(report['furnishing'])}</p><h2 style="color:white">Evidence and outlook</h2><p>Comparable average: {safe(format_price(float(report['nearby_average_price'])))}</p><p>Comparable rate: {safe(format_price_per_sqft(float(report['nearby_price_per_sqft'])))}</p><p>5-year scenario: {safe(format_price(float(report['projected_price_5y'])))}</p><p>10-year scenario: {safe(format_price(float(report['projected_price_10y'])))}</p><p style="font-size:12px;color:#929db6">Decision-support estimate only. Scenario values are not guaranteed sale prices.</p></div></div></body></html>"""
     request = Request(
         BREVO_EMAIL_URL,
-        data=json.dumps(payload).encode("utf-8"),
+        data=json.dumps(
+            {
+                "sender": {"name": sender_name, "email": sender_email},
+                "to": [{"email": recipient}],
+                "subject": f"Property valuation · {report['location']}",
+                "htmlContent": body,
+            }
+        ).encode(),
         headers={
             "accept": "application/json",
             "api-key": api_key,
@@ -115,66 +77,49 @@ def send_valuation_email(recipient: str, report: dict[str, Any]) -> None:
     try:
         with urlopen(request, timeout=15) as response:
             if response.status != 201:
-                raise EmailDeliveryError("Brevo rejected the email request.")
+                raise EmailDeliveryError("The email provider rejected the request.")
     except HTTPError as exc:
         try:
-            error_data = json.loads(exc.read().decode("utf-8", errors="replace"))
-            message = str(error_data.get("message", "Request rejected"))
-        except (json.JSONDecodeError, AttributeError, OSError):
+            message = json.loads(exc.read().decode(errors="replace")).get(
+                "message", "Request rejected"
+            )
+        except Exception:
             message = "Request rejected"
-        raise EmailDeliveryError(
-            f"Brevo error HTTP {exc.code}: {message}. Check the API key and verified sender."
-        ) from exc
+        raise EmailDeliveryError(f"Email provider error {exc.code}: {message}") from exc
     except URLError as exc:
         raise EmailDeliveryError("The email service could not be reached.") from exc
 
 
-st.set_page_config(page_title="History | GharMulyankan", page_icon="🕘", layout="wide")
+st.set_page_config(
+    page_title="Private Library | GharMulyankan", page_icon="◈", layout="wide"
+)
 apply_page_style()
-
 show_sidebar(
-    "Valuation library",
-    "Review, email, filter, and export estimates stored only in this browser profile.",
+    "Private valuation library",
+    "Filter, compare, export, email and control estimates stored in this browser profile.",
 )
 show_hero(
-    "Your valuation library, organised.",
-    "Return to saved estimates, compare outcomes, email a selected report, or export your records.",
-    "Private browser history",
-    ["Stored on this device", "Email selected report", "Export to CSV"],
+    "Your property decisions, kept in one private ledger.",
+    "Return to earlier estimates, compare scenario outcomes, export a research dataset or deliver a polished report by email.",
+    "Private valuation vault",
+    ["Stored on this device", "Filterable decision ledger", "Email-ready reports"],
 )
 
-history_loading = show_loading_shell(
-    "Syncing your valuation library",
-    "Reading saved records privately from this browser profile.",
+records, ready = browser_history(
+    component_key="history_browser_storage", include_status=True
 )
-saved_records, browser_history_ready = browser_history(
-    component_key="history_browser_storage",
-    include_status=True,
-)
-if not browser_history_ready:
+if not ready:
+    st.info("Synchronising this browser's private valuation library…")
     st.stop()
-
-history = pd.DataFrame(saved_records)
-complete_loading_shell(
-    history_loading,
-    "Valuation library ready",
-    f"{len(history):,} saved valuation{'s' if len(history) != 1 else ''} loaded from this browser.",
-)
+history = pd.DataFrame(records)
 if history.empty:
     st.markdown(
-        """
-        <div class="empty-state">
-            <div class="empty-icon">＋</div>
-            <div class="empty-title">Your valuation library is empty</div>
-            <div class="empty-copy">Create an estimate on the main valuation page and choose “Save this valuation”. It will be stored only in this browser profile.</div>
-        </div>
-        """,
+        '<div class="empty-state"><div class="empty-icon">＋</div><div class="empty-title">The private vault is empty</div><div class="empty-copy">Create a valuation in the main studio and save it. The record will appear here without being written to the application server.</div></div>',
         unsafe_allow_html=True,
     )
-    st.caption("Browser history stays on this device and is not stored on the Render server.")
     st.stop()
 
-history_columns = [
+columns = [
     "id",
     "created_at",
     "city",
@@ -196,170 +141,189 @@ history_columns = [
     "comparison_scope",
     "model_name",
 ]
-display_columns = [
-    "id",
-    "created_at",
-    "city",
-    "location",
-    "area",
-    "bhk",
-    "bathrooms",
-    "property_type",
-    "predicted_price",
-    "projected_price_5y",
-    "projected_price_10y",
-    "annual_growth_rate",
-    "houses_found",
-    "comparison_scope",
-    "model_name",
-]
-history = history.reindex(columns=history_columns)
-
+history = history.reindex(columns=columns)
 with st.container(border=True):
-    filter_left, filter_right = st.columns([1.1, 2.2], gap="large")
-    city_options = ["All saved markets"] + sorted(
-        history["city"].dropna().astype(str).unique()
+    city_col, search_col = st.columns([1, 1.8], gap="medium")
+    city = city_col.selectbox(
+        "Market filter",
+        ["All saved markets"] + sorted(history["city"].dropna().astype(str).unique()),
     )
-    selected_city = filter_left.selectbox("History filter", city_options)
-    filter_right.markdown(
-        '<div class="tiny-note" style="padding-top:1.9rem">Filters change the visible '
-        "summary, trend, table, and downloaded CSV together.</div>",
-        unsafe_allow_html=True,
+    query = search_col.text_input(
+        "Search locality", placeholder="Type a locality name…"
     )
-
-visible_history = (
+visible = (
     history
-    if selected_city == "All saved markets"
-    else history[history["city"].astype(str).eq(selected_city)]
+    if city == "All saved markets"
+    else history[history["city"].astype(str).eq(city)]
+)
+if query.strip():
+    visible = visible[
+        visible["location"]
+        .astype(str)
+        .str.contains(query.strip(), case=False, na=False)
+    ]
+
+one, two, three, four = st.columns(4)
+one.metric("Visible decisions", len(visible))
+two.metric(
+    "Average estimate",
+    (
+        format_price(float(visible["predicted_price"].mean()))
+        if not visible.empty
+        else "—"
+    ),
+)
+three.metric(
+    "Highest estimate",
+    format_price(float(visible["predicted_price"].max())) if not visible.empty else "—",
+)
+four.metric(
+    "Average 10-year",
+    (
+        format_price(float(visible["projected_price_10y"].mean()))
+        if not visible.empty
+        else "—"
+    ),
 )
 
-first, second, third = st.columns(3)
-first.metric("Visible valuations", len(visible_history))
-second.metric("Average estimate", format_price(float(visible_history["predicted_price"].mean())))
-third.metric("Highest estimate", format_price(float(visible_history["predicted_price"].max())))
-
-section_header("01", "Recent valuation trend", "Only valuations you saved are included")
-trend = visible_history.sort_values("created_at").copy()
-trend["Price (Lakh)"] = trend["predicted_price"] / 100_000
+section_header(
+    "01", "Decision timeline", "Every saved estimate plotted in chronological order"
+)
+trend = visible.copy()
 trend["Saved at"] = pd.to_datetime(trend["created_at"], errors="coerce")
-figure = px.line(
-    trend,
+trend["Current (Lakh)"] = trend["predicted_price"] / 100_000
+trend["10-year (Lakh)"] = trend["projected_price_10y"] / 100_000
+fig = px.line(
+    trend.sort_values("Saved at").melt(
+        id_vars=["Saved at", "location"],
+        value_vars=["Current (Lakh)", "10-year (Lakh)"],
+        var_name="Scenario",
+        value_name="Price (Lakh)",
+    ),
     x="Saved at",
     y="Price (Lakh)",
+    color="Scenario",
     markers=True,
     hover_name="location",
-    color_discrete_sequence=["#625bf6"],
+    color_discrete_map={"Current (Lakh)": "#927fff", "10-year (Lakh)": "#48d5ff"},
+    title="Current estimate versus long-range scenario",
 )
-style_plotly(figure, height=355)
-figure.update_traces(line_width=3, marker_size=8)
-with st.container(border=True):
-    st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
+style_plotly(fig, 390)
+fig.update_traces(line_width=3, marker_size=7)
+st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-section_header("02", "All saved records", "Stored only in this browser profile")
-display = visible_history[display_columns].copy()
+section_header(
+    "02", "Decision ledger", "A sortable, export-ready view of the visible library"
+)
+display = visible[
+    [
+        "id",
+        "created_at",
+        "city",
+        "location",
+        "area",
+        "bhk",
+        "property_type",
+        "predicted_price",
+        "projected_price_5y",
+        "projected_price_10y",
+        "annual_growth_rate",
+        "houses_found",
+    ]
+].copy()
 display.columns = [
     "ID",
-    "Saved at",
+    "Saved UTC",
     "City",
     "Location",
-    "Area (sq.ft)",
+    "Area",
     "BHK",
-    "Bathrooms",
     "Type",
-    "Predicted price",
+    "Current estimate",
     "5-year scenario",
     "10-year scenario",
-    "Growth assumption",
-    "Comparables",
-    "Comparison scope",
-    "Model",
+    "Growth",
+    "Evidence",
 ]
 st.dataframe(
     display,
     hide_index=True,
     use_container_width=True,
+    height=390,
     column_config={
-        "Predicted price": st.column_config.NumberColumn(format="₹ %d"),
+        "Current estimate": st.column_config.NumberColumn(format="₹ %d"),
         "5-year scenario": st.column_config.NumberColumn(format="₹ %d"),
         "10-year scenario": st.column_config.NumberColumn(format="₹ %d"),
-        "Growth assumption": st.column_config.NumberColumn(format="%.1f%%"),
-        "Area (sq.ft)": st.column_config.NumberColumn(format="%d"),
+        "Growth": st.column_config.NumberColumn(format="%.1f%%"),
+        "Area": st.column_config.NumberColumn(format="%d sq.ft"),
     },
 )
-
 st.download_button(
-    "Download visible records as CSV",
-    visible_history.to_csv(index=False).encode("utf-8"),
-    file_name="saved_house_price_predictions.csv",
-    mime="text/csv",
+    "Export visible decision ledger",
+    visible.to_csv(index=False).encode(),
+    "ghar_mulyankan_private_library.csv",
+    "text/csv",
     use_container_width=True,
 )
 
-section_header("03", "Email a saved valuation", "Choose one history record and send its report")
+section_header(
+    "03",
+    "Report delivery",
+    "Select one saved decision and send its complete valuation report",
+)
 with st.container(border=True):
-    email_options = visible_history["id"].astype(str).tolist()
-    labels = {
-        str(row["id"]): (
-            f"{row['location']}, {row['city']} · "
-            f"{format_price(float(row['predicted_price']))}"
+    if visible.empty:
+        st.info("No visible record is available for delivery.")
+    else:
+        labels = {
+            str(
+                row["id"]
+            ): f"{row['location']}, {row['city']} · {format_price(float(row['predicted_price']))}"
+            for _, row in visible.iterrows()
+        }
+        selected = st.selectbox(
+            "Valuation report",
+            visible["id"].astype(str),
+            format_func=lambda value: labels.get(value, value),
         )
-        for _, row in visible_history.iterrows()
-    }
-    selected_record_id = st.selectbox(
-        "Saved valuation",
-        email_options,
-        format_func=lambda record_id: labels.get(record_id, record_id),
-    )
-    st.markdown(
-        '<div class="tiny-note">The recipient address is used only for delivery and is '
-        "not added to browser history or SQLite.</div>",
-        unsafe_allow_html=True,
-    )
-    with st.form("history_email_report", clear_on_submit=True):
-        report_email = st.text_input(
-            "Recipient email address",
-            placeholder="name@example.com",
-            autocomplete="email",
-        )
-        send_report = st.form_submit_button(
-            "Email selected valuation",
-            type="primary",
-            use_container_width=True,
-        )
-
-    if send_report:
-        now = time.time()
-        last_sent_at = float(st.session_state.get("last_report_email_at", 0.0))
-        wait_seconds = EMAIL_COOLDOWN_SECONDS - int(now - last_sent_at)
-        if wait_seconds > 0:
-            st.warning(f"Please wait {wait_seconds} seconds before sending another report.")
-        else:
-            selected_rows = visible_history[
-                visible_history["id"].astype(str).eq(selected_record_id)
-            ]
-            if selected_rows.empty:
-                st.error("The selected valuation could not be found. Refresh History and try again.")
+        with st.form("delivery_form", clear_on_submit=True):
+            recipient = st.text_input(
+                "Recipient email", placeholder="name@example.com", autocomplete="email"
+            )
+            submitted = st.form_submit_button(
+                "Deliver private report", type="primary", use_container_width=True
+            )
+        if submitted:
+            wait = EMAIL_COOLDOWN_SECONDS - int(
+                time.time() - float(st.session_state.get("last_report_email_at", 0))
+            )
+            if wait > 0:
+                st.warning(f"Please wait {wait} seconds before sending another report.")
             else:
-                selected_report = selected_rows.iloc[0].to_dict()
+                report = (
+                    visible[visible["id"].astype(str).eq(selected)].iloc[0].to_dict()
+                )
                 try:
-                    with st.spinner("Sending the saved valuation..."):
-                        send_valuation_email(report_email, selected_report)
+                    with st.spinner("Delivering report…"):
+                        send_email(recipient, report)
                 except EmailDeliveryError as error:
                     st.error(str(error))
                 else:
-                    st.session_state["last_report_email_at"] = now
-                    st.success("Valuation report sent. Check the inbox and spam folder.")
+                    st.session_state["last_report_email_at"] = time.time()
+                    st.success("Report delivered successfully.")
+        info_line(
+            "Recipient addresses are used for delivery only and are not added to browser history."
+        )
 
-if st.button("Clear this browser's history", use_container_width=True):
+section_header(
+    "04", "Privacy controls", "Remove every saved decision from this browser profile"
+)
+if st.button("Clear private valuation vault", use_container_width=True):
     browser_history(
-        component_key="history_browser_clear",
-        action="clear",
-        action_id=uuid4().hex,
+        component_key="history_browser_clear", action="clear", action_id=uuid4().hex
     )
-    st.toast("History cleared from this browser", icon="✅")
-
+    st.toast("Private valuation library cleared", icon="✓")
 st.markdown(
-    '<div class="app-footer">Saved records stay in this browser profile. They are not '
-    "written to Render or shared with other visitors.</div>",
+    '<div class="app-footer">Private Valuation Vault · browser-only storage · no server-side history</div>',
     unsafe_allow_html=True,
 )
