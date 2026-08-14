@@ -6,7 +6,10 @@ import html
 import json
 import os
 import re
+import sys
 import time
+from pathlib import Path
+from textwrap import dedent
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -16,16 +19,19 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+
+# ---------------------------------------------------------------------
+# PROJECT SETUP
+# ---------------------------------------------------------------------
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 from utils.browser_storage import browser_history
 from utils.price_utils import format_price, format_price_per_sqft
-from utils.ui_utils import (
-    apply_page_style,
-    info_line,
-    section_header,
-    show_hero,
-    show_sidebar,
-    style_plotly,
-)
+from utils.ui_utils import apply_page_style, style_plotly
 
 
 BREVO_EMAIL_URL = "https://api.brevo.com/v3/smtp/email"
@@ -33,72 +39,212 @@ EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 EMAIL_COOLDOWN_SECONDS = 60
 
 
+st.set_page_config(
+    page_title="Private Library | GharMulyankan",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+apply_page_style()
+
+
+# ---------------------------------------------------------------------
+# SAFE HTML COMPONENTS
+# ---------------------------------------------------------------------
+
+def render_html(markup: str) -> None:
+    """Render HTML without Markdown indentation problems."""
+    st.html(dedent(markup).strip())
+
+
+def show_sidebar(context: str, description: str) -> None:
+    with st.sidebar:
+        render_html(
+            """
+            <div class="brand-lockup">
+                <span class="brand-mark">G</span>
+
+                <div>
+                    <div class="brand-name">
+                        GharMulyankan
+                    </div>
+
+                    <div class="brand-caption">
+                        Property decision system
+                    </div>
+                </div>
+            </div>
+            """
+        )
+
+        render_html(
+            f"""
+            <div class="sidebar-panel">
+                <div class="overline">
+                    Active workspace
+                </div>
+
+                <div class="title">
+                    {html.escape(context)}
+                </div>
+
+                <div class="copy">
+                    {html.escape(description)}
+                </div>
+
+                <div class="live-line">
+                    <span class="live-dot"></span>
+                    Private browser storage connected
+                </div>
+            </div>
+            """
+        )
+
+        st.divider()
+
+        render_html(
+            """
+            <div class="sidebar-foot">
+                Saved valuations remain inside this browser profile.
+                They are not stored in the application database.
+            </div>
+            """
+        )
+
+
+def show_hero(
+    title: str,
+    subtitle: str,
+    eyebrow: str,
+    chips: list[str],
+) -> None:
+    chip_markup = "".join(
+        f'<span class="hero-chip">{html.escape(chip)}</span>'
+        for chip in chips
+    )
+
+    render_html(
+        f"""
+        <div class="hero">
+            <div class="hero-content">
+                <div class="eyebrow">
+                    <span class="eyebrow-dot"></span>
+                    {html.escape(eyebrow)}
+                </div>
+
+                <h1>
+                    {html.escape(title)}
+                </h1>
+
+                <p>
+                    {html.escape(subtitle)}
+                </p>
+
+                <div class="hero-chips">
+                    {chip_markup}
+                </div>
+            </div>
+        </div>
+        """
+    )
+
+
+def section_header(
+    number: str,
+    title: str,
+    description: str,
+) -> None:
+    render_html(
+        f"""
+        <div class="section-head">
+            <span class="section-index">
+                {html.escape(number)}
+            </span>
+
+            <div>
+                <div class="section-title">
+                    {html.escape(title)}
+                </div>
+
+                <div class="section-copy">
+                    {html.escape(description)}
+                </div>
+            </div>
+
+            <span class="section-rule"></span>
+        </div>
+        """
+    )
+
+
+def info_line(message: str, warning: bool = False) -> None:
+    modifier = " warning-line" if warning else ""
+    symbol = "!" if warning else "i"
+
+    render_html(
+        f"""
+        <div class="info-line{modifier}">
+            <span class="info-icon">
+                {symbol}
+            </span>
+
+            <span>
+                {html.escape(message)}
+            </span>
+        </div>
+        """
+    )
+
+
+# ---------------------------------------------------------------------
+# EMAIL SUPPORT
+# ---------------------------------------------------------------------
+
 class EmailDeliveryError(RuntimeError):
-    """Raised when an email report cannot be delivered."""
+    """Raised when a valuation report cannot be delivered."""
 
 
-def setting(
-    name: str,
-    default: str = "",
-) -> str:
-    """Read settings from environment variables or Streamlit secrets."""
+def setting(name: str, default: str = "") -> str:
+    environment_value = os.getenv(name, "").strip()
 
-    value = os.getenv(
-        name,
-        "",
-    ).strip()
-
-    if value:
-        return value
+    if environment_value:
+        return environment_value
 
     try:
         return str(
-            st.secrets.get(
-                name,
-                default,
-            )
+            st.secrets.get(name, default)
         ).strip()
-
     except Exception:
         return default
 
 
-def safe(
-    value: Any,
-) -> str:
-    """Escape values before inserting them into the email HTML."""
-
+def safe(value: Any) -> str:
     if value is None:
-        value = "Not available"
+        return "Not available"
 
-    return html.escape(
-        str(value)
-    )
+    try:
+        if pd.isna(value):
+            return "Not available"
+    except (TypeError, ValueError):
+        pass
+
+    return html.escape(str(value))
 
 
 def send_email(
     recipient: str,
     report: dict[str, Any],
 ) -> None:
-    """Send the selected valuation through the Brevo API."""
-
     recipient = recipient.strip().lower()
 
-    if not EMAIL_PATTERN.fullmatch(
-        recipient
-    ):
+    if not EMAIL_PATTERN.fullmatch(recipient):
         raise EmailDeliveryError(
-            "Enter a valid email address."
+            "Enter a valid recipient email address."
         )
 
-    api_key = setting(
-        "BREVO_API_KEY"
-    )
-
-    sender_email = setting(
-        "BREVO_SENDER_EMAIL"
-    )
-
+    api_key = setting("BREVO_API_KEY")
+    sender_email = setting("BREVO_SENDER_EMAIL")
     sender_name = setting(
         "BREVO_SENDER_NAME",
         "GharMulyankan",
@@ -107,205 +253,145 @@ def send_email(
     if not api_key or not sender_email:
         raise EmailDeliveryError(
             "Add BREVO_API_KEY and BREVO_SENDER_EMAIL "
-            "to the deployment environment."
+            "to your deployment environment."
         )
 
-    location = safe(
-        report["location"]
-    )
-
-    city = safe(
-        report["city"]
-    )
+    location = safe(report.get("location"))
+    city = safe(report.get("city"))
 
     predicted_price = safe(
         format_price(
-            float(
-                report["predicted_price"]
-            )
+            float(report.get("predicted_price", 0))
         )
-    )
-
-    area = safe(
-        report["area"]
-    )
-
-    bhk = safe(
-        report["bhk"]
-    )
-
-    bathrooms = safe(
-        report["bathrooms"]
-    )
-
-    property_type = safe(
-        report["property_type"]
-    )
-
-    parking = safe(
-        report["parking"]
-    )
-
-    property_age = safe(
-        report["property_age"]
-    )
-
-    furnishing = safe(
-        report["furnishing"]
     )
 
     nearby_average = safe(
         format_price(
-            float(
-                report["nearby_average_price"]
-            )
+            float(report.get("nearby_average_price", 0))
         )
     )
 
     nearby_rate = safe(
         format_price_per_sqft(
-            float(
-                report["nearby_price_per_sqft"]
-            )
+            float(report.get("nearby_price_per_sqft", 0))
         )
     )
 
-    five_year_value = safe(
+    projected_5y = safe(
         format_price(
-            float(
-                report["projected_price_5y"]
-            )
+            float(report.get("projected_price_5y", 0))
         )
     )
 
-    ten_year_value = safe(
+    projected_10y = safe(
         format_price(
-            float(
-                report["projected_price_10y"]
-            )
+            float(report.get("projected_price_10y", 0))
         )
     )
 
-    email_html = f"""
-    <html>
-        <body
-            style="
-                margin: 0;
-                background: #070b16;
-                padding: 30px;
-                font-family: Arial, sans-serif;
-                color: #eef1ff;
-            "
-        >
-            <div
-                style="
-                    max-width: 650px;
-                    margin: auto;
-                    background: #111a30;
-                    border: 1px solid #293451;
-                    border-radius: 22px;
-                    overflow: hidden;
-                "
-            >
-                <div
-                    style="
-                        padding: 34px;
-                        background:
-                            linear-gradient(
-                                135deg,
-                                #1b2854,
-                                #6757e8
-                            );
-                    "
-                >
-                    <div
-                        style="
-                            font-size: 11px;
-                            letter-spacing: 2px;
-                            color: #d7d2ff;
-                        "
-                    >
-                        GHARMULYANKAN · PRIVATE REPORT
+    email_body = dedent(
+        f"""
+        <!DOCTYPE html>
+        <html>
+            <body style="
+                margin:0;
+                background:#070b16;
+                padding:30px;
+                font-family:Arial,sans-serif;
+                color:#eef1ff;
+            ">
+                <div style="
+                    max-width:650px;
+                    margin:auto;
+                    background:#111a30;
+                    border:1px solid #293451;
+                    border-radius:22px;
+                    overflow:hidden;
+                ">
+                    <div style="
+                        padding:34px;
+                        background:linear-gradient(
+                            135deg,
+                            #1b2854,
+                            #6757e8
+                        );
+                    ">
+                        <div style="
+                            font-size:11px;
+                            letter-spacing:2px;
+                            color:#d7d2ff;
+                        ">
+                            GHARMULYANKAN · PRIVATE REPORT
+                        </div>
+
+                        <h1 style="margin:12px 0 6px;">
+                            {location}, {city}
+                        </h1>
+
+                        <div style="
+                            font-size:38px;
+                            font-weight:800;
+                        ">
+                            {predicted_price}
+                        </div>
                     </div>
 
-                    <h1 style="margin: 12px 0 6px">
-                        {location}, {city}
-                    </h1>
+                    <div style="
+                        padding:30px;
+                        color:#c7cfe0;
+                    ">
+                        <h2 style="color:white;">
+                            Property profile
+                        </h2>
 
-                    <div
-                        style="
-                            font-size: 38px;
-                            font-weight: 800;
-                        "
-                    >
-                        {predicted_price}
+                        <p>
+                            {safe(report.get("area"))} sq.ft ·
+                            {safe(report.get("bhk"))} BHK ·
+                            {safe(report.get("bathrooms"))} bathrooms ·
+                            {safe(report.get("property_type"))}
+                        </p>
+
+                        <p>
+                            Parking {safe(report.get("parking"))} ·
+                            Age {safe(report.get("property_age"))} years ·
+                            {safe(report.get("furnishing"))}
+                        </p>
+
+                        <h2 style="color:white;">
+                            Evidence and outlook
+                        </h2>
+
+                        <p>
+                            Comparable average: {nearby_average}
+                        </p>
+
+                        <p>
+                            Comparable rate: {nearby_rate}
+                        </p>
+
+                        <p>
+                            Five-year scenario: {projected_5y}
+                        </p>
+
+                        <p>
+                            Ten-year scenario: {projected_10y}
+                        </p>
+
+                        <p style="
+                            font-size:12px;
+                            color:#929db6;
+                        ">
+                            This is a decision-support estimate.
+                            Scenario values are not guaranteed sale prices.
+                        </p>
                     </div>
                 </div>
+            </body>
+        </html>
+        """
+    ).strip()
 
-                <div
-                    style="
-                        padding: 30px;
-                        color: #c7cfe0;
-                    "
-                >
-                    <h2 style="color: white">
-                        Property profile
-                    </h2>
-
-                    <p>
-                        {area} sq.ft ·
-                        {bhk} BHK ·
-                        {bathrooms} bathrooms ·
-                        {property_type}
-                    </p>
-
-                    <p>
-                        Parking {parking} ·
-                        Age {property_age} years ·
-                        {furnishing}
-                    </p>
-
-                    <h2 style="color: white">
-                        Evidence and outlook
-                    </h2>
-
-                    <p>
-                        Comparable average:
-                        {nearby_average}
-                    </p>
-
-                    <p>
-                        Comparable rate:
-                        {nearby_rate}
-                    </p>
-
-                    <p>
-                        5-year scenario:
-                        {five_year_value}
-                    </p>
-
-                    <p>
-                        10-year scenario:
-                        {ten_year_value}
-                    </p>
-
-                    <p
-                        style="
-                            font-size: 12px;
-                            color: #929db6;
-                        "
-                    >
-                        Decision-support estimate only.
-                        Scenario values are not guaranteed
-                        sale prices.
-                    </p>
-                </div>
-            </div>
-        </body>
-    </html>
-    """
-
-    payload = {
+    request_data = {
         "sender": {
             "name": sender_name,
             "email": sender_email,
@@ -316,17 +402,15 @@ def send_email(
             }
         ],
         "subject": (
-            "Property valuation · "
-            f"{report['location']}"
+            f"Property valuation · "
+            f"{report.get('location', 'Saved property')}"
         ),
-        "htmlContent": email_html,
+        "htmlContent": email_body,
     }
 
     request = Request(
         BREVO_EMAIL_URL,
-        data=json.dumps(
-            payload
-        ).encode("utf-8"),
+        data=json.dumps(request_data).encode("utf-8"),
         headers={
             "accept": "application/json",
             "api-key": api_key,
@@ -336,26 +420,22 @@ def send_email(
     )
 
     try:
-        with urlopen(
-            request,
-            timeout=15,
-        ) as response:
+        with urlopen(request, timeout=15) as response:
             if response.status != 201:
                 raise EmailDeliveryError(
-                    "The email provider rejected "
-                    "the request."
+                    "The email provider rejected the request."
                 )
 
     except HTTPError as error:
         try:
-            error_data = json.loads(
+            error_response = json.loads(
                 error.read().decode(
                     "utf-8",
                     errors="replace",
                 )
             )
 
-            message = error_data.get(
+            message = error_response.get(
                 "message",
                 "Request rejected",
             )
@@ -364,8 +444,7 @@ def send_email(
             message = "Request rejected"
 
         raise EmailDeliveryError(
-            f"Email provider error "
-            f"{error.code}: {message}"
+            f"Email provider error {error.code}: {message}"
         ) from error
 
     except URLError as error:
@@ -374,50 +453,34 @@ def send_email(
         ) from error
 
 
-st.set_page_config(
-    page_title=(
-        "Private Library | GharMulyankan"
-    ),
-    page_icon="◈",
-    layout="wide",
-)
-
-apply_page_style()
-
+# ---------------------------------------------------------------------
+# PAGE HEADER
+# ---------------------------------------------------------------------
 
 show_sidebar(
     "Private valuation library",
     (
-        "Filter, compare, export, email and control "
-        "estimates stored in this browser profile."
+        "Filter, compare, export, email and manage estimates "
+        "stored inside this browser profile."
     ),
 )
 
-
-return_home = st.button(
+if st.button(
     "← Return to valuation studio",
     key="history_return_home",
     use_container_width=True,
-)
-
-if return_home:
-    st.switch_page(
-        "app.py"
-    )
-
+):
+    st.switch_page("app.py")
 
 show_hero(
-    (
-        "Your property decisions, "
-        "kept in one private ledger."
+    title="Your property decisions, kept in one private ledger.",
+    subtitle=(
+        "Return to earlier estimates, compare scenario outcomes, "
+        "export your research data or deliver a polished report "
+        "directly by email."
     ),
-    (
-        "Return to earlier estimates, compare scenario "
-        "outcomes, export a research dataset or deliver "
-        "a polished report by email."
-    ),
-    "Private valuation vault",
-    [
+    eyebrow="Private valuation vault",
+    chips=[
         "Stored on this device",
         "Filterable decision ledger",
         "Email-ready reports",
@@ -425,27 +488,25 @@ show_hero(
 )
 
 
-saved_records, browser_ready = browser_history(
+# ---------------------------------------------------------------------
+# LOAD BROWSER HISTORY
+# ---------------------------------------------------------------------
+
+records, storage_ready = browser_history(
     component_key="history_browser_storage",
     include_status=True,
 )
 
-
-if not browser_ready:
+if not storage_ready:
     st.info(
-        "Synchronising this browser's "
-        "private valuation library…"
+        "Synchronising this browser's private valuation library…"
     )
     st.stop()
 
-
-history = pd.DataFrame(
-    saved_records
-)
-
+history = pd.DataFrame(records)
 
 if history.empty:
-    st.markdown(
+    render_html(
         """
         <div class="empty-state">
             <div class="empty-icon">
@@ -457,17 +518,28 @@ if history.empty:
             </div>
 
             <div class="empty-copy">
-                Create a valuation in the main studio
-                and save it. The record will appear here
-                without being written to the application server.
+                Create a valuation in the main studio and save it.
+                The record will appear here without being written
+                to the application server.
             </div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
+
+    if st.button(
+        "Create my first valuation",
+        type="primary",
+        key="empty_history_return",
+        use_container_width=True,
+    ):
+        st.switch_page("app.py")
 
     st.stop()
 
+
+# ---------------------------------------------------------------------
+# NORMALISE RECORDS
+# ---------------------------------------------------------------------
 
 history_columns = [
     "id",
@@ -492,35 +564,51 @@ history_columns = [
     "model_name",
 ]
 
+history = history.reindex(columns=history_columns)
 
-history = history.reindex(
-    columns=history_columns
-)
+numeric_columns = [
+    "area",
+    "bhk",
+    "bathrooms",
+    "parking",
+    "property_age",
+    "predicted_price",
+    "nearby_average_price",
+    "nearby_price_per_sqft",
+    "projected_price_5y",
+    "projected_price_10y",
+    "annual_growth_rate",
+    "houses_found",
+]
+
+for numeric_column in numeric_columns:
+    history[numeric_column] = pd.to_numeric(
+        history[numeric_column],
+        errors="coerce",
+    )
 
 
-with st.container(
-    border=True,
-):
+# ---------------------------------------------------------------------
+# FILTERS
+# ---------------------------------------------------------------------
+
+with st.container(border=True):
     city_column, search_column = st.columns(
-        [
-            1,
-            1.8,
-        ],
+        [1, 1.8],
         gap="medium",
     )
 
-    city_options = [
-        "All saved markets"
-    ] + sorted(
+    available_cities = sorted(
         history["city"]
         .dropna()
         .astype(str)
         .unique()
+        .tolist()
     )
 
     selected_city = city_column.selectbox(
         "Market filter",
-        city_options,
+        ["All saved markets"] + available_cities,
     )
 
     search_query = search_column.text_input(
@@ -529,15 +617,14 @@ with st.container(
     )
 
 
-visible_history = (
-    history
-    if selected_city == "All saved markets"
-    else history[
+if selected_city == "All saved markets":
+    visible_history = history.copy()
+else:
+    visible_history = history[
         history["city"]
         .astype(str)
         .eq(selected_city)
-    ]
-)
+    ].copy()
 
 
 if search_query.strip():
@@ -548,20 +635,21 @@ if search_query.strip():
             search_query.strip(),
             case=False,
             na=False,
+            regex=False,
         )
-    ]
+    ].copy()
 
 
-metric_one, metric_two, metric_three, metric_four = (
-    st.columns(4)
-)
+# ---------------------------------------------------------------------
+# SUMMARY METRICS
+# ---------------------------------------------------------------------
 
+metric_one, metric_two, metric_three, metric_four = st.columns(4)
 
 metric_one.metric(
     "Visible decisions",
     len(visible_history),
 )
-
 
 metric_two.metric(
     "Average estimate",
@@ -578,7 +666,6 @@ metric_two.metric(
     ),
 )
 
-
 metric_three.metric(
     "Highest estimate",
     (
@@ -593,7 +680,6 @@ metric_three.metric(
         else "—"
     ),
 )
-
 
 metric_four.metric(
     "Average 10-year",
@@ -611,118 +697,116 @@ metric_four.metric(
 )
 
 
+# ---------------------------------------------------------------------
+# DECISION TIMELINE
+# ---------------------------------------------------------------------
+
 section_header(
     "01",
     "Decision timeline",
-    (
-        "Every saved estimate plotted "
-        "in chronological order"
-    ),
+    "Every visible estimate plotted in chronological order.",
 )
 
-
-trend = visible_history.copy()
-
-trend["Saved at"] = pd.to_datetime(
-    trend["created_at"],
-    errors="coerce",
-)
-
-trend["Current (Lakh)"] = (
-    trend["predicted_price"]
-    / 100_000
-)
-
-trend["10-year (Lakh)"] = (
-    trend["projected_price_10y"]
-    / 100_000
-)
-
-
-trend_chart_data = (
-    trend.sort_values(
-        "Saved at"
-    ).melt(
-        id_vars=[
-            "Saved at",
-            "location",
-        ],
-        value_vars=[
-            "Current (Lakh)",
-            "10-year (Lakh)",
-        ],
-        var_name="Scenario",
-        value_name="Price (Lakh)",
+if visible_history.empty:
+    st.info(
+        "No saved records match the selected filters."
     )
-)
+
+else:
+    trend_data = visible_history.copy()
+
+    trend_data["Saved at"] = pd.to_datetime(
+        trend_data["created_at"],
+        errors="coerce",
+        utc=True,
+    )
+
+    trend_data["Current estimate"] = (
+        trend_data["predicted_price"] / 100_000
+    )
+
+    trend_data["10-year scenario"] = (
+        trend_data["projected_price_10y"] / 100_000
+    )
+
+    melted_trend = (
+        trend_data
+        .sort_values("Saved at")
+        .melt(
+            id_vars=[
+                "Saved at",
+                "location",
+            ],
+            value_vars=[
+                "Current estimate",
+                "10-year scenario",
+            ],
+            var_name="Scenario",
+            value_name="Price (Lakh)",
+        )
+    )
+
+    timeline_figure = px.line(
+        melted_trend,
+        x="Saved at",
+        y="Price (Lakh)",
+        color="Scenario",
+        markers=True,
+        hover_name="location",
+        color_discrete_map={
+            "Current estimate": "#927fff",
+            "10-year scenario": "#48d5ff",
+        },
+        title=(
+            "Current estimate versus long-range scenario"
+        ),
+    )
+
+    style_plotly(timeline_figure, 390)
+
+    timeline_figure.update_traces(
+        line_width=3,
+        marker_size=7,
+    )
+
+    st.plotly_chart(
+        timeline_figure,
+        use_container_width=True,
+        config={
+            "displayModeBar": False,
+            "scrollZoom": False,
+        },
+    )
 
 
-trend_figure = px.line(
-    trend_chart_data,
-    x="Saved at",
-    y="Price (Lakh)",
-    color="Scenario",
-    markers=True,
-    hover_name="location",
-    color_discrete_map={
-        "Current (Lakh)": "#927fff",
-        "10-year (Lakh)": "#48d5ff",
-    },
-    title=(
-        "Current estimate versus "
-        "long-range scenario"
-    ),
-)
-
-
-style_plotly(
-    trend_figure,
-    height=390,
-)
-
-
-trend_figure.update_traces(
-    line_width=3,
-    marker_size=7,
-)
-
-
-st.plotly_chart(
-    trend_figure,
-    use_container_width=True,
-    config={
-        "displayModeBar": False,
-    },
-)
-
+# ---------------------------------------------------------------------
+# DECISION LEDGER
+# ---------------------------------------------------------------------
 
 section_header(
     "02",
     "Decision ledger",
-    (
-        "A sortable, export-ready view "
-        "of the visible library"
-    ),
+    "A sortable and export-ready view of the visible library.",
 )
 
+display_columns = [
+    "id",
+    "created_at",
+    "city",
+    "location",
+    "area",
+    "bhk",
+    "property_type",
+    "predicted_price",
+    "projected_price_5y",
+    "projected_price_10y",
+    "annual_growth_rate",
+    "houses_found",
+]
 
 display_table = visible_history[
-    [
-        "id",
-        "created_at",
-        "city",
-        "location",
-        "area",
-        "bhk",
-        "property_type",
-        "predicted_price",
-        "projected_price_5y",
-        "projected_price_10y",
-        "annual_growth_rate",
-        "houses_found",
-    ]
+    display_columns
 ].copy()
-
 
 display_table.columns = [
     "ID",
@@ -739,7 +823,6 @@ display_table.columns = [
     "Evidence",
 ]
 
-
 st.dataframe(
     display_table,
     hide_index=True,
@@ -748,85 +831,78 @@ st.dataframe(
     column_config={
         "Current estimate": (
             st.column_config.NumberColumn(
-                format="₹ %d"
+                format="₹ %d",
             )
         ),
         "5-year scenario": (
             st.column_config.NumberColumn(
-                format="₹ %d"
+                format="₹ %d",
             )
         ),
         "10-year scenario": (
             st.column_config.NumberColumn(
-                format="₹ %d"
+                format="₹ %d",
             )
         ),
         "Growth": (
             st.column_config.NumberColumn(
-                format="%.1f%%"
+                format="%.1f%%",
             )
         ),
         "Area": (
             st.column_config.NumberColumn(
-                format="%d sq.ft"
+                format="%d sq.ft",
             )
         ),
     },
 )
 
-
 st.download_button(
-    "Export visible decision ledger",
-    visible_history.to_csv(
+    label="Export visible decision ledger",
+    data=visible_history.to_csv(
         index=False
     ).encode("utf-8"),
-    file_name=(
-        "ghar_mulyankan_private_library.csv"
-    ),
+    file_name="ghar_mulyankan_private_library.csv",
     mime="text/csv",
+    key="download_history_csv",
     use_container_width=True,
 )
 
+
+# ---------------------------------------------------------------------
+# EMAIL REPORT DELIVERY
+# ---------------------------------------------------------------------
 
 section_header(
     "03",
     "Report delivery",
     (
-        "Select one saved decision and send "
-        "its complete valuation report"
+        "Select one saved decision and send its complete "
+        "valuation report."
     ),
 )
 
-
-with st.container(
-    border=True,
-):
+with st.container(border=True):
     if visible_history.empty:
         st.info(
-            "No visible record is available "
-            "for delivery."
+            "No visible record is available for delivery."
         )
 
     else:
         report_labels = {
             str(row["id"]): (
-                f"{row['location']}, "
-                f"{row['city']} · "
+                f"{row['location']}, {row['city']} · "
                 f"{format_price(float(row['predicted_price']))}"
             )
             for _, row in visible_history.iterrows()
         }
 
-        selected_record = st.selectbox(
+        selected_report_id = st.selectbox(
             "Valuation report",
-            visible_history[
-                "id"
-            ].astype(str),
-            format_func=lambda value: (
-                report_labels.get(
-                    value,
-                    value,
-                )
+            visible_history["id"].astype(str),
+            format_func=lambda value: report_labels.get(
+                value,
+                value,
             ),
         )
 
@@ -847,27 +923,25 @@ with st.container(
             )
 
         if submitted:
-            current_time = time.time()
-
-            last_delivery_time = float(
+            previous_delivery_time = float(
                 st.session_state.get(
                     "last_report_email_at",
                     0,
                 )
             )
 
-            wait_seconds = (
-                EMAIL_COOLDOWN_SECONDS
-                - int(
-                    current_time
-                    - last_delivery_time
-                )
+            elapsed_seconds = (
+                time.time() - previous_delivery_time
             )
 
-            if wait_seconds > 0:
+            remaining_wait = (
+                EMAIL_COOLDOWN_SECONDS
+                - int(elapsed_seconds)
+            )
+
+            if remaining_wait > 0:
                 st.warning(
-                    "Please wait "
-                    f"{wait_seconds} seconds "
+                    f"Please wait {remaining_wait} seconds "
                     "before sending another report."
                 )
 
@@ -875,83 +949,90 @@ with st.container(
                 selected_rows = visible_history[
                     visible_history["id"]
                     .astype(str)
-                    .eq(selected_record)
+                    .eq(selected_report_id)
                 ]
 
-                selected_report = (
-                    selected_rows
-                    .iloc[0]
-                    .to_dict()
-                )
-
-                try:
-                    with st.spinner(
-                        "Delivering report…"
-                    ):
-                        send_email(
-                            recipient_email,
-                            selected_report,
-                        )
-
-                except EmailDeliveryError as error:
+                if selected_rows.empty:
                     st.error(
-                        str(error)
+                        "The selected valuation record "
+                        "could not be found."
                     )
 
                 else:
-                    st.session_state[
-                        "last_report_email_at"
-                    ] = current_time
-
-                    st.success(
-                        "Report delivered successfully."
+                    report = (
+                        selected_rows
+                        .iloc[0]
+                        .to_dict()
                     )
+
+                    try:
+                        with st.spinner(
+                            "Delivering report…"
+                        ):
+                            send_email(
+                                recipient_email,
+                                report,
+                            )
+
+                    except EmailDeliveryError as error:
+                        st.error(str(error))
+
+                    else:
+                        st.session_state[
+                            "last_report_email_at"
+                        ] = time.time()
+
+                        st.success(
+                            "Report delivered successfully."
+                        )
 
         info_line(
             (
-                "Recipient addresses are used for delivery "
-                "only and are not added to browser history."
+                "Recipient addresses are used only for report "
+                "delivery and are not added to browser history."
             )
         )
 
+
+# ---------------------------------------------------------------------
+# PRIVACY CONTROLS
+# ---------------------------------------------------------------------
 
 section_header(
     "04",
     "Privacy controls",
     (
-        "Remove every saved decision "
-        "from this browser profile"
+        "Remove every saved valuation from this "
+        "browser profile."
     ),
 )
 
-
-clear_history = st.button(
+if st.button(
     "Clear private valuation vault",
+    key="clear_private_history",
     use_container_width=True,
-)
-
-
-if clear_history:
+):
     browser_history(
-        component_key=(
-            "history_browser_clear"
-        ),
+        component_key="history_browser_clear",
         action="clear",
         action_id=uuid4().hex,
     )
 
     st.toast(
         "Private valuation library cleared",
-        icon="✓",
+        icon="✅",
     )
 
 
-st.markdown(
+# ---------------------------------------------------------------------
+# FOOTER
+# ---------------------------------------------------------------------
+
+render_html(
     """
     <div class="app-footer">
-        Private Valuation Vault · browser-only storage ·
-        no server-side history
+        Private Valuation Vault · Browser-only storage ·
+        No server-side valuation history
     </div>
-    """,
-    unsafe_allow_html=True,
+    """
 )
