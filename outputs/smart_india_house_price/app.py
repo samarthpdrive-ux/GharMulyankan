@@ -1,4 +1,4 @@
-"""Advanced GharMulyankan property valuation application."""
+"""GharMulyankan advanced property valuation studio."""
 
 from __future__ import annotations
 
@@ -17,29 +17,11 @@ import plotly.graph_objects as go
 import streamlit as st
 
 
-# ---------------------------------------------------------------------
-# PROJECT PATHS
-# ---------------------------------------------------------------------
-
 PROJECT_DIR = Path(__file__).resolve().parent
 
 if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
-from utils.browser_storage import browser_history
-from utils.nearby_utils import find_market_comparables, get_market_statistics
-from utils.price_utils import format_price, format_price_per_sqft
-from utils.ui_utils import apply_page_style, style_plotly
-
-
-DATA_PATH = PROJECT_DIR / "data" / "india_housing.csv"
-MODEL_PATH = PROJECT_DIR / "models" / "best_model.joblib"
-METADATA_PATH = PROJECT_DIR / "models" / "model_metadata.json"
-
-
-# ---------------------------------------------------------------------
-# STREAMLIT CONFIGURATION
-# ---------------------------------------------------------------------
 
 st.set_page_config(
     page_title="GharMulyankan | Valuation Studio",
@@ -48,27 +30,163 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
+from utils.browser_storage import browser_history
+from utils.nearby_utils import (
+    find_market_comparables,
+    get_market_statistics,
+)
+from utils.ui_utils import apply_page_style
+
+
+DATA_PATH = PROJECT_DIR / "data" / "india_housing.csv"
+MODEL_PATH = PROJECT_DIR / "models" / "best_model.joblib"
+METADATA_PATH = PROJECT_DIR / "models" / "model_metadata.json"
+
+
 apply_page_style()
 
 
-# ---------------------------------------------------------------------
-# SAFE HTML RENDERER
-# ---------------------------------------------------------------------
-
 def render_html(markup: str) -> None:
-    """
-    Render HTML without Streamlit interpreting indentation as a Markdown
-    code block.
-    """
-    cleaned_markup = dedent(markup).strip()
-    st.html(cleaned_markup)
+    """Render HTML without Markdown displaying it as source code."""
+    cleaned = dedent(markup).strip()
+
+    if hasattr(st, "html"):
+        st.html(cleaned)
+    else:
+        st.markdown(
+            cleaned,
+            unsafe_allow_html=True,
+        )
 
 
-# ---------------------------------------------------------------------
-# UI COMPONENTS
-# ---------------------------------------------------------------------
+def format_indian_number(
+    value: float,
+    decimals: int = 0,
+) -> str:
+    if value is None or not math.isfinite(float(value)):
+        return "—"
 
-def show_sidebar(context: str, description: str) -> None:
+    sign = "-" if float(value) < 0 else ""
+    fixed = f"{abs(float(value)):.{decimals}f}"
+
+    integer, _, fraction = fixed.partition(".")
+
+    if len(integer) > 3:
+        last_three = integer[-3:]
+        leading = integer[:-3]
+        pairs: list[str] = []
+
+        while leading:
+            pairs.insert(
+                0,
+                leading[-2:],
+            )
+            leading = leading[:-2]
+
+        integer = ",".join(
+            pairs + [last_three]
+        )
+
+    suffix = f".{fraction}" if decimals else ""
+
+    return f"{sign}{integer}{suffix}"
+
+
+def format_price(
+    value: float | None,
+) -> str:
+    if value is None or not math.isfinite(float(value)):
+        return "—"
+
+    amount = max(
+        0.0,
+        float(value),
+    )
+
+    if amount >= 10_000_000:
+        return (
+            f"₹{amount / 10_000_000:.2f} Crore"
+        )
+
+    if amount >= 100_000:
+        return (
+            f"₹{amount / 100_000:.2f} Lakh"
+        )
+
+    return f"₹{format_indian_number(amount)}"
+
+
+def format_price_per_sqft(
+    value: float | None,
+) -> str:
+    if value is None or not math.isfinite(float(value)):
+        return "—"
+
+    return (
+        f"₹{format_indian_number(float(value))} / sq.ft"
+    )
+
+
+def style_plotly(
+    figure: go.Figure,
+    height: int = 400,
+) -> go.Figure:
+    figure.update_layout(
+        height=height,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font={
+            "family": "DM Sans",
+            "color": "#77788d",
+            "size": 11,
+        },
+        title={
+            "font": {
+                "family": "Manrope",
+                "color": "#18182c",
+                "size": 15,
+            },
+            "x": 0.02,
+        },
+        legend={
+            "title": None,
+            "orientation": "h",
+            "y": 1.1,
+            "x": 0,
+        },
+        margin={
+            "l": 10,
+            "r": 12,
+            "t": 58,
+            "b": 10,
+        },
+        hoverlabel={
+            "bgcolor": "#29204f",
+            "font_color": "white",
+            "bordercolor": "#8f72ff",
+        },
+    )
+
+    figure.update_xaxes(
+        gridcolor="rgba(65,52,125,.09)",
+        zeroline=False,
+        linecolor="rgba(65,52,125,.12)",
+    )
+
+    figure.update_yaxes(
+        gridcolor="rgba(65,52,125,.09)",
+        zeroline=False,
+        linecolor="rgba(65,52,125,.12)",
+    )
+
+    return figure
+
+
+def show_sidebar(
+    context: str,
+    description: str,
+) -> None:
     with st.sidebar:
         render_html(
             """
@@ -116,8 +234,8 @@ def show_sidebar(context: str, description: str) -> None:
         render_html(
             """
             <div class="sidebar-foot">
-                Independent property decision support built using real
-                listing evidence. Always verify final transactions locally.
+                Independent decision support built from real listing
+                evidence. Verify final transaction values locally.
             </div>
             """
         )
@@ -126,12 +244,12 @@ def show_sidebar(context: str, description: str) -> None:
 def show_hero(
     title: str,
     subtitle: str,
-    eyebrow: str = "Property intelligence",
-    chips: list[str] | None = None,
+    eyebrow: str,
+    chips: list[str],
 ) -> None:
-    chip_markup = "".join(
+    chip_html = "".join(
         f'<span class="hero-chip">{html.escape(chip)}</span>'
-        for chip in (chips or [])
+        for chip in chips
     )
 
     render_html(
@@ -152,7 +270,7 @@ def show_hero(
                 </p>
 
                 <div class="hero-chips">
-                    {chip_markup}
+                    {chip_html}
                 </div>
             </div>
         </div>
@@ -160,7 +278,9 @@ def show_hero(
     )
 
 
-def workflow_strip(active: int = 1) -> None:
+def workflow_strip(
+    active: int = 1,
+) -> None:
     stages = [
         ("Locate", "Choose the market"),
         ("Shape", "Build the property"),
@@ -168,44 +288,39 @@ def workflow_strip(active: int = 1) -> None:
         ("Explore", "Test the future"),
     ]
 
-    stage_markup: list[str] = []
+    cards: list[str] = []
 
-    for index, (label, description) in enumerate(stages, start=1):
-        active_class = " active" if index == active else ""
+    for index, (label, copy) in enumerate(
+        stages,
+        start=1,
+    ):
+        active_class = (
+            " active"
+            if index == active
+            else ""
+        )
 
-        stage_markup.append(
-            f"""
-            <div class="workflow-item{active_class}">
-                <span class="workflow-number">
-                    {index:02d}
-                </span>
-
-                <div>
-                    <div class="workflow-label">
-                        {html.escape(label)}
-                    </div>
-
-                    <div class="workflow-copy">
-                        {html.escape(description)}
-                    </div>
-                </div>
-            </div>
-            """
+        cards.append(
+            f'<div class="workflow-item{active_class}">'
+            f'<span class="workflow-number">{index:02d}</span>'
+            f'<div>'
+            f'<div class="workflow-label">{html.escape(label)}</div>'
+            f'<div class="workflow-copy">{html.escape(copy)}</div>'
+            f'</div>'
+            f'</div>'
         )
 
     render_html(
-        f"""
-        <div class="workflow-strip">
-            {''.join(stage_markup)}
-        </div>
-        """
+        '<div class="workflow-strip">'
+        + "".join(cards)
+        + "</div>"
     )
 
 
 def section_header(
     number: str,
     title: str,
-    description: str = "",
+    copy: str = "",
 ) -> None:
     render_html(
         f"""
@@ -220,7 +335,7 @@ def section_header(
                 </div>
 
                 <div class="section-copy">
-                    {html.escape(description)}
+                    {html.escape(copy)}
                 </div>
             </div>
 
@@ -230,36 +345,43 @@ def section_header(
     )
 
 
-def info_line(message: str, warning: bool = False) -> None:
-    modifier = " warning-line" if warning else ""
+def info_line(
+    message: str,
+    warning: bool = False,
+) -> None:
+    modifier = (
+        " warning-line"
+        if warning
+        else ""
+    )
+
     symbol = "!" if warning else "i"
 
     render_html(
-        f"""
-        <div class="info-line{modifier}">
-            <span class="info-icon">
-                {symbol}
-            </span>
-
-            <span>
-                {html.escape(message)}
-            </span>
-        </div>
-        """
+        f'<div class="info-line{modifier}">'
+        f'<span class="info-icon">{symbol}</span>'
+        f'<span>{html.escape(message)}</span>'
+        f'</div>'
     )
 
 
-def change_stepper_value(
+def change_value(
     key: str,
     amount: float,
     minimum: float,
     maximum: float,
 ) -> None:
-    current_value = st.session_state.get(key, minimum)
+    current = st.session_state.get(
+        key,
+        minimum,
+    )
 
     st.session_state[key] = min(
         maximum,
-        max(minimum, current_value + amount),
+        max(
+            minimum,
+            current + amount,
+        ),
     )
 
 
@@ -270,47 +392,53 @@ def stepper_slider(
     maximum: int,
     default: int,
     step: int = 1,
-    help_text: str | None = None,
 ) -> int:
     if key not in st.session_state:
         st.session_state[key] = default
 
-    minus_column, slider_column, plus_column = st.columns(
-        [0.55, 5, 0.55],
-        vertical_alignment="bottom",
+    minus_column, slider_column, plus_column = (
+        st.columns(
+            [0.55, 5, 0.55],
+            vertical_alignment="bottom",
+        )
     )
 
     minus_column.button(
         "−",
         key=f"{key}_minus",
-        on_click=change_stepper_value,
-        args=(key, -step, minimum, maximum),
+        on_click=change_value,
+        args=(
+            key,
+            -step,
+            minimum,
+            maximum,
+        ),
         use_container_width=True,
     )
 
     value = slider_column.slider(
         label,
-        min_value=minimum,
-        max_value=maximum,
+        minimum,
+        maximum,
         step=step,
         key=key,
-        help=help_text,
     )
 
     plus_column.button(
         "+",
         key=f"{key}_plus",
-        on_click=change_stepper_value,
-        args=(key, step, minimum, maximum),
+        on_click=change_value,
+        args=(
+            key,
+            step,
+            minimum,
+            maximum,
+        ),
         use_container_width=True,
     )
 
     return int(value)
 
-
-# ---------------------------------------------------------------------
-# DATA AND MODEL LOADING
-# ---------------------------------------------------------------------
 
 @st.cache_data(show_spinner=False)
 def load_data() -> pd.DataFrame:
@@ -325,13 +453,11 @@ def load_model():
 @st.cache_data(show_spinner=False)
 def load_metadata() -> dict:
     return json.loads(
-        METADATA_PATH.read_text(encoding="utf-8")
+        METADATA_PATH.read_text(
+            encoding="utf-8"
+        )
     )
 
-
-# ---------------------------------------------------------------------
-# CALCULATION HELPERS
-# ---------------------------------------------------------------------
 
 def future_value(
     value: float,
@@ -343,42 +469,46 @@ def future_value(
     ) ** int(years)
 
 
-def safe_coordinate(value: float) -> float | None:
-    if pd.isna(value):
+def safe_coordinate(
+    value: float,
+) -> float | None:
+    if (
+        pd.isna(value)
+        or not math.isfinite(float(value))
+    ):
         return None
 
-    numeric_value = float(value)
-
-    if not math.isfinite(numeric_value):
-        return None
-
-    return numeric_value
+    return float(value)
 
 
 def outlook_chart(
-    current_value: float,
-    annual_growth: float,
+    value: float,
+    growth: float,
 ) -> go.Figure:
     years = list(range(11))
 
-    selected_scenario = [
-        future_value(current_value, annual_growth, year)
-        for year in years
-    ]
-
-    conservative_scenario = [
+    selected = [
         future_value(
-            current_value,
-            max(annual_growth - 2, 0),
+            value,
+            growth,
             year,
         )
         for year in years
     ]
 
-    optimistic_scenario = [
+    conservative = [
         future_value(
-            current_value,
-            min(annual_growth + 2, 18),
+            value,
+            max(growth - 2, 0),
+            year,
+        )
+        for year in years
+    ]
+
+    optimistic = [
+        future_value(
+            value,
+            min(growth + 2, 18),
             year,
         )
         for year in years
@@ -389,11 +519,11 @@ def outlook_chart(
     figure.add_trace(
         go.Scatter(
             x=years,
-            y=optimistic_scenario,
+            y=optimistic,
             mode="lines",
             name="Optimistic",
             line={
-                "color": "rgba(72, 213, 255, 0.60)",
+                "color": "rgba(72,213,255,.60)",
                 "width": 1.5,
                 "dash": "dot",
             },
@@ -408,13 +538,13 @@ def outlook_chart(
     figure.add_trace(
         go.Scatter(
             x=years,
-            y=conservative_scenario,
+            y=conservative,
             mode="lines",
             name="Conservative",
             fill="tonexty",
-            fillcolor="rgba(140, 127, 255, 0.10)",
+            fillcolor="rgba(140,127,255,.10)",
             line={
-                "color": "rgba(78, 226, 172, 0.60)",
+                "color": "rgba(78,226,172,.60)",
                 "width": 1.5,
                 "dash": "dot",
             },
@@ -429,7 +559,7 @@ def outlook_chart(
     figure.add_trace(
         go.Scatter(
             x=years,
-            y=selected_scenario,
+            y=selected,
             mode="lines+markers",
             name="Selected scenario",
             line={
@@ -449,7 +579,10 @@ def outlook_chart(
         )
     )
 
-    style_plotly(figure, 370)
+    style_plotly(
+        figure,
+        370,
+    )
 
     figure.update_layout(
         title="Scenario corridor",
@@ -465,17 +598,14 @@ def outlook_chart(
     return figure
 
 
-# ---------------------------------------------------------------------
-# SIDEBAR AND HERO
-# ---------------------------------------------------------------------
-
 show_sidebar(
     "Valuation command centre",
     (
-        "Build a precise property profile, inspect live evidence, "
-        "and stress-test its future value."
+        "Build a precise property profile, inspect live "
+        "evidence and stress-test future value."
     ),
 )
+
 
 render_html(
     """
@@ -504,42 +634,42 @@ render_html(
     """
 )
 
+
 show_hero(
-    title="A clearer signal for every property decision.",
-    subtitle=(
-        "Model valuation, local evidence and future scenarios—combined "
-        "inside one focused workspace built for Indian housing markets."
+    "A clearer signal for every property decision.",
+    (
+        "Model valuation, local evidence and future scenarios—"
+        "combined in one focused workspace for Indian housing markets."
     ),
-    eyebrow="Live valuation intelligence",
-    chips=[
+    "Live valuation intelligence",
+    [
         "Real listing evidence",
         "Instant recalculation",
         "Private browser saves",
     ],
 )
 
+
 workflow_strip(active=1)
 
-
-# ---------------------------------------------------------------------
-# MAIN NAVIGATION
-# ---------------------------------------------------------------------
 
 section_header(
     "00",
     "Move through the workspace",
     (
         "Open saved valuation records or inspect the intelligence "
-        "behind the prediction model."
+        "behind the production model."
     ),
 )
 
-history_column, model_column = st.columns(
+
+history_navigation, model_navigation = st.columns(
     2,
     gap="medium",
 )
 
-with history_column:
+
+with history_navigation:
     with st.container(border=True):
         render_html(
             """
@@ -553,8 +683,8 @@ with history_column:
                 </div>
 
                 <div class="navigation-card-description">
-                    Review estimates, compare previous scenarios,
-                    export records and email valuation reports.
+                    Review estimates, compare scenarios,
+                    export records and email reports.
                 </div>
             </div>
             """
@@ -565,10 +695,12 @@ with history_column:
             key="open_saved_records",
             use_container_width=True,
         ):
-            st.switch_page("pages/History.py")
+            st.switch_page(
+                "pages/History.py"
+            )
 
 
-with model_column:
+with model_navigation:
     with st.container(border=True):
         render_html(
             """
@@ -582,8 +714,8 @@ with model_column:
                 </div>
 
                 <div class="navigation-card-description">
-                    Inspect prediction errors, model selection,
-                    input features and training information.
+                    Inspect measured errors, model selection,
+                    inputs and training provenance.
                 </div>
             </div>
             """
@@ -594,41 +726,41 @@ with model_column:
             key="open_model_performance",
             use_container_width=True,
         ):
-            st.switch_page("pages/Model_Performance.py")
+            st.switch_page(
+                "pages/Model_Performance.py"
+            )
 
-
-# ---------------------------------------------------------------------
-# REQUIRED FILE CHECK
-# ---------------------------------------------------------------------
-
-required_files = (
-    DATA_PATH,
-    MODEL_PATH,
-    METADATA_PATH,
-)
 
 missing_files = [
     path.name
-    for path in required_files
+    for path in (
+        DATA_PATH,
+        MODEL_PATH,
+        METADATA_PATH,
+    )
     if not path.exists()
 ]
 
+
 if missing_files:
     st.error(
-        "The valuation engine is incomplete. Missing files: "
+        "Valuation engine files are missing: "
         + ", ".join(missing_files)
     )
     st.stop()
 
 
-data = load_data()
-model = load_model()
-metadata = load_metadata()
+try:
+    data = load_data()
+    model = load_model()
+    metadata = load_metadata()
 
+except Exception as error:
+    st.error(
+        f"The valuation engine could not be loaded: {error}"
+    )
+    st.stop()
 
-# ---------------------------------------------------------------------
-# PROPERTY AND LOCATION INPUTS
-# ---------------------------------------------------------------------
 
 section_header(
     "01",
@@ -638,6 +770,7 @@ section_header(
         "the comparable-property evidence pool."
     ),
 )
+
 
 with st.container(border=True):
     market_column, property_column = st.columns(
@@ -654,14 +787,22 @@ with st.container(border=True):
             .tolist()
         )
 
+        if not cities:
+            st.error(
+                "No city records are available in the dataset."
+            )
+            st.stop()
+
         city = st.selectbox(
             "City market",
             cities,
         )
 
         city_data = data[
-            data["city"].astype(str).eq(city)
-        ]
+            data["city"]
+            .astype(str)
+            .eq(city)
+        ].copy()
 
         locality_counts = (
             city_data
@@ -670,113 +811,137 @@ with st.container(border=True):
             .sort_values(ascending=False)
         )
 
+        localities = (
+            locality_counts
+            .index
+            .astype(str)
+            .tolist()
+        )
+
+        if not localities:
+            st.error(
+                "No localities are available for this city."
+            )
+            st.stop()
+
         locality = st.selectbox(
             "Locality / micro-market",
-            locality_counts.index.tolist(),
+            localities,
         )
 
         requested_comparables = st.select_slider(
             "Evidence depth",
-            options=[5, 10, 20, 30, 50],
+            options=[
+                5,
+                10,
+                20,
+                30,
+                50,
+            ],
             value=10,
         )
 
-        source_record_count = int(
-            locality_counts.get(locality, 0)
+        source_count = int(
+            locality_counts.get(
+                locality,
+                0,
+            )
         )
 
         render_html(
             f"""
             <div class="market-badge">
-                ● {source_record_count:,} source records
+                ● {source_count:,} source records
             </div>
             """
         )
 
         info_line(
             (
-                f"Exact {locality} listings are ranked first. "
-                f"Similar {city} properties fill only the remaining "
+                f"Exact {locality} listings are ranked first; "
+                f"similar {city} homes fill the remaining "
                 "evidence positions."
             )
         )
 
     with property_column:
-        left_column, right_column = st.columns(
+        left_inputs, right_inputs = st.columns(
             2,
             gap="medium",
         )
 
-        with left_column:
+        with left_inputs:
             area = stepper_slider(
-                label="Built-up area (sq.ft)",
-                key="area",
-                minimum=250,
-                maximum=10_000,
-                default=1_200,
-                step=50,
+                "Built-up area (sq.ft)",
+                "area",
+                250,
+                10_000,
+                1_200,
+                50,
             )
 
             bhk = stepper_slider(
-                label="Bedrooms / BHK",
-                key="bhk",
-                minimum=1,
-                maximum=10,
-                default=2,
+                "Bedrooms / BHK",
+                "bhk",
+                1,
+                10,
+                2,
             )
 
             bathrooms = stepper_slider(
-                label="Bathrooms",
-                key="bathrooms",
-                minimum=1,
-                maximum=10,
-                default=2,
+                "Bathrooms",
+                "bathrooms",
+                1,
+                10,
+                2,
             )
 
-        with right_column:
+        with right_inputs:
             parking = stepper_slider(
-                label="Parking spaces",
-                key="parking",
-                minimum=0,
-                maximum=6,
-                default=1,
+                "Parking spaces",
+                "parking",
+                0,
+                6,
+                1,
             )
 
             property_age = stepper_slider(
-                label="Property age (years)",
-                key="property_age",
-                minimum=0,
-                maximum=80,
-                default=5,
+                "Property age (years)",
+                "property_age",
+                0,
+                80,
+                5,
             )
 
-            furnishing_column, type_column = st.columns(2)
-
-            furnishing = furnishing_column.selectbox(
-                "Furnishing",
-                [
-                    "Unfurnished",
-                    "Semifurnished",
-                    "Furnished",
-                    "Unknown",
-                ],
+            furnishing_column, type_column = (
+                st.columns(2)
             )
 
-            property_type = type_column.selectbox(
-                "Property type",
-                [
-                    "Apartment",
-                    "Builder Floor",
-                    "Villa",
-                    "Independent House",
-                    "Unknown",
-                ],
+            furnishing = (
+                furnishing_column.selectbox(
+                    "Furnishing",
+                    [
+                        "Unfurnished",
+                        "Semifurnished",
+                        "Furnished",
+                        "Unknown",
+                    ],
+                )
             )
 
+            property_type = (
+                type_column.selectbox(
+                    "Property type",
+                    [
+                        "Apartment",
+                        "Builder Floor",
+                        "Villa",
+                        "Independent House",
+                        "Unknown",
+                    ],
+                )
+            )
 
-# ---------------------------------------------------------------------
-# MODEL PREDICTION
-# ---------------------------------------------------------------------
 
 model_input = pd.DataFrame(
     [
@@ -794,80 +959,80 @@ model_input = pd.DataFrame(
     ]
 )
 
-predicted_price = max(
-    0.0,
-    float(model.predict(model_input)[0]),
-)
+
+try:
+    predicted_price = max(
+        0.0,
+        float(
+            model.predict(
+                model_input
+            )[0]
+        ),
+    )
+
+except Exception as error:
+    st.error(
+        f"The property could not be valued: {error}"
+    )
+    st.stop()
+
 
 comparables, comparison_scope, exact_match_count = (
     find_market_comparables(
-        data=data,
-        city=city,
-        location=locality,
-        area=area,
-        bhk=bhk,
-        limit=int(requested_comparables),
+        data,
+        city,
+        locality,
+        area,
+        bhk,
+        int(requested_comparables),
     )
 )
 
-market_statistics = get_market_statistics(comparables)
 
-predicted_price_per_sqft = (
-    predicted_price / area
-    if area
-    else 0
+market_statistics = get_market_statistics(
+    comparables
 )
 
-market_average_price = float(
-    market_statistics["average_price"] or 0
+
+predicted_rate = (
+    predicted_price
+    / max(float(area), 1.0)
 )
+
+
+market_average = float(
+    market_statistics["average_price"]
+    or 0
+)
+
 
 market_gap = (
-    predicted_price - market_average_price
+    predicted_price
+    - market_average
 )
 
-
-# ---------------------------------------------------------------------
-# VALUATION RESULT
-# ---------------------------------------------------------------------
 
 section_header(
     "02",
     "Read the valuation signal",
-    f"Production model · {metadata['selected_model']}",
+    (
+        "Production model · "
+        f"{metadata.get('selected_model', 'Saved valuation pipeline')}"
+    ),
 )
+
 
 signal_column, evidence_column = st.columns(
     [1.1, 1],
     gap="medium",
 )
 
+
 with signal_column:
     evidence_strength = (
         "High local evidence"
         if exact_match_count >= 10
         else "Limited local evidence"
-    )
-
-    result_price = html.escape(
-        format_price(predicted_price)
-    )
-
-    result_rate = html.escape(
-        format_price_per_sqft(
-            predicted_price_per_sqft
-        )
-    )
-
-    result_locality = html.escape(locality)
-    result_city = html.escape(city)
-
-    selected_model = html.escape(
-        str(metadata["selected_model"])
-    )
-
-    comparable_count = int(
-        market_statistics["houses_found"]
     )
 
     render_html(
@@ -878,11 +1043,12 @@ with signal_column:
             </div>
 
             <div class="price">
-                {result_price}
+                {html.escape(format_price(predicted_price))}
             </div>
 
             <div class="sub">
-                {result_rate} · {result_locality}, {result_city}
+                {html.escape(format_price_per_sqft(predicted_rate))}
+                · {html.escape(locality)}, {html.escape(city)}
             </div>
 
             <div class="confidence-row">
@@ -892,12 +1058,14 @@ with signal_column:
                 </span>
 
                 <span class="confidence-pill">
-                    {comparable_count} verified comparables
+                    {int(market_statistics["houses_found"])}
+                    verified comparables
                 </span>
             </div>
 
             <div class="result-model">
-                Live pipeline · {selected_model}
+                Live pipeline ·
+                {html.escape(str(metadata.get("selected_model", "Production model")))}
             </div>
         </div>
         """
@@ -905,35 +1073,41 @@ with signal_column:
 
 
 with evidence_column:
-    first_metric, second_metric = st.columns(2)
+    metric_one, metric_two = st.columns(2)
 
-    first_metric.metric(
+    metric_one.metric(
         "Comparable average",
         format_price(
             market_statistics["average_price"]
         ),
     )
 
-    second_metric.metric(
+    metric_two.metric(
         "Comparable median",
         format_price(
             market_statistics["median_price"]
         ),
     )
 
-    third_metric, fourth_metric = st.columns(2)
+    metric_three, metric_four = st.columns(2)
 
-    third_metric.metric(
+    metric_three.metric(
         "Average market rate",
         format_price_per_sqft(
             market_statistics["price_per_sqft"]
         ),
     )
 
-    fourth_metric.metric(
+    metric_four.metric(
         "Model vs market",
-        format_price(abs(market_gap)),
-        "Above" if market_gap >= 0 else "Below",
+        format_price(
+            abs(market_gap)
+        ),
+        (
+            "Above"
+            if market_gap >= 0
+            else "Below"
+        ),
     )
 
     info_line(
@@ -942,32 +1116,29 @@ with evidence_column:
     )
 
 
-# ---------------------------------------------------------------------
-# FUTURE VALUE SCENARIOS
-# ---------------------------------------------------------------------
-
 section_header(
     "03",
     "Stress-test the outlook",
     (
-        "Explore your selected appreciation rate alongside a "
-        "transparent ±2% scenario corridor."
+        "Explore a selected annual appreciation rate "
+        "with a transparent ±2% scenario corridor."
     ),
 )
 
+
 with st.container(border=True):
-    control_column, chart_column = st.columns(
+    outlook_controls, outlook_visual = st.columns(
         [0.62, 1.55],
         gap="large",
     )
 
-    with control_column:
+    with outlook_controls:
         annual_growth_rate = st.slider(
             "Annual appreciation assumption",
-            min_value=0.0,
-            max_value=15.0,
-            value=6.0,
-            step=0.5,
+            0.0,
+            15.0,
+            6.0,
+            0.5,
             format="%.1f%%",
         )
 
@@ -985,26 +1156,32 @@ with st.container(border=True):
 
         st.metric(
             "Five-year scenario",
-            format_price(projected_price_5y),
             format_price(
-                projected_price_5y - predicted_price
+                projected_price_5y
+            ),
+            format_price(
+                projected_price_5y
+                - predicted_price
             ),
         )
 
         st.metric(
             "Ten-year scenario",
-            format_price(projected_price_10y),
             format_price(
-                projected_price_10y - predicted_price
+                projected_price_10y
+            ),
+            format_price(
+                projected_price_10y
+                - predicted_price
             ),
         )
 
         st.caption(
-            "The scenario corridor is explanatory. It is not a "
-            "confidence interval or a guaranteed market forecast."
+            "The scenario corridor is explanatory—not a "
+            "confidence interval or guaranteed market forecast."
         )
 
-    with chart_column:
+    with outlook_visual:
         st.plotly_chart(
             outlook_chart(
                 predicted_price,
@@ -1018,33 +1195,34 @@ with st.container(border=True):
         )
 
 
-# ---------------------------------------------------------------------
-# PROPERTY COORDINATES
-# ---------------------------------------------------------------------
-
 coordinate_rows = city_data.loc[
     city_data["location"]
     .astype(str)
     .eq(locality),
-    ["latitude", "longitude"],
+    [
+        "latitude",
+        "longitude",
+    ],
 ].dropna()
 
-if coordinate_rows.empty:
-    latitude = None
-    longitude = None
-else:
-    latitude = safe_coordinate(
+
+latitude = (
+    safe_coordinate(
         coordinate_rows["latitude"].median()
     )
+    if not coordinate_rows.empty
+    else None
+)
 
-    longitude = safe_coordinate(
+
+longitude = (
+    safe_coordinate(
         coordinate_rows["longitude"].median()
     )
+    if not coordinate_rows.empty
+    else None
+)
 
-
-# ---------------------------------------------------------------------
-# SAVE VALUATION
-# ---------------------------------------------------------------------
 
 if st.button(
     "Save valuation to private library",
@@ -1060,7 +1238,9 @@ if st.button(
             "id": uuid4().hex[:10],
             "created_at": datetime.now(
                 timezone.utc
-            ).isoformat(timespec="seconds"),
+            ).isoformat(
+                timespec="seconds"
+            ),
             "location": locality,
             "city": city,
             "latitude": latitude,
@@ -1086,7 +1266,10 @@ if st.button(
             "annual_growth_rate": annual_growth_rate,
             "projected_price_5y": projected_price_5y,
             "projected_price_10y": projected_price_10y,
-            "model_name": metadata["selected_model"],
+            "model_name": metadata.get(
+                "selected_model",
+                "Production model",
+            ),
         },
     )
 
@@ -1096,24 +1279,21 @@ if st.button(
     )
 
 
-# ---------------------------------------------------------------------
-# COMPARABLE PROPERTY TABLE
-# ---------------------------------------------------------------------
-
 section_header(
     "04",
     "Inspect every comparable",
     (
-        "Real source records ordered by locality match and "
-        "property similarity."
+        "Real source records ordered by locality "
+        "match and property similarity."
     ),
 )
+
 
 with st.container(border=True):
     if comparables.empty:
         st.info(
-            "No comparable property records are available "
-            "for this market."
+            "No comparable property records are "
+            "available for this market."
         )
 
     else:
@@ -1131,10 +1311,14 @@ with st.container(border=True):
         ].copy()
 
         comparable_table["same_locality"] = (
-            comparable_table["same_locality"].map(
+            comparable_table[
+                "same_locality"
+            ].map(
                 {
                     True: "Exact locality",
-                    False: f"Other {city} locality",
+                    False: (
+                        f"Other {city} locality"
+                    ),
                 }
             )
         )
@@ -1175,15 +1359,11 @@ with st.container(border=True):
         )
 
 
-# ---------------------------------------------------------------------
-# FOOTER
-# ---------------------------------------------------------------------
-
 render_html(
     """
     <div class="app-footer">
         GharMulyankan · Live model estimates for decision support ·
-        Verify final property values locally
+        Verify final values locally
     </div>
     """
 )
