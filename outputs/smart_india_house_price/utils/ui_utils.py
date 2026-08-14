@@ -562,9 +562,43 @@ hr { border-color: var(--line); }
 """
 
 
+# Visual-only override: all existing page logic, history, email, and models stay intact.
+ADVANCED_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+:root { --ink:#f7f8ff; --muted:#9da9c1; --line:rgba(255,255,255,.10); --accent:#8c7cff; --teal:#4ee6ae; }
+html, body, [class*="css"] { font-family:"DM Sans",sans-serif; }
+.stApp { background:radial-gradient(circle at 90% 0%,rgba(94,75,239,.25),transparent 26rem),radial-gradient(circle at 4% 38%,rgba(36,190,239,.09),transparent 27rem),linear-gradient(180deg,#080c17,#070b16)!important; color:var(--ink); }
+.block-container { max-width:1450px!important; padding-top:1.45rem!important; }
+[data-testid="stSidebar"] { background:linear-gradient(180deg,#0a1020,#101b35)!important; border-right:1px solid rgba(255,255,255,.09)!important; }
+[data-testid="stSidebar"] * { color:#e8ecfa; }
+.brand-mark { background:linear-gradient(135deg,#a295ff,#5c4de3)!important; box-shadow:0 10px 25px rgba(108,91,255,.35)!important; }
+.brand-name,.sidebar-panel .title { color:white!important; font-family:Manrope,sans-serif!important; }
+.brand-caption,.sidebar-panel .copy,.sidebar-foot { color:#9da8c0!important; }
+.sidebar-panel { border-color:rgba(255,255,255,.10)!important; background:rgba(255,255,255,.045)!important; }
+.live-line { color:#94eccf!important; }
+.hero { min-height:285px!important; border-color:rgba(255,255,255,.10)!important; border-radius:24px!important; background:radial-gradient(circle at 87% 18%,rgba(130,114,255,.57),transparent 17rem),radial-gradient(circle at 72% 100%,rgba(29,194,245,.17),transparent 20rem),linear-gradient(125deg,#0a1020,#172240)!important; box-shadow:0 24px 56px rgba(0,0,0,.22)!important; }
+.hero h1 { color:white!important; font-family:Manrope,sans-serif!important; font-weight:800!important; letter-spacing:-.065em!important; }
+.hero p { color:#b6c0d6!important; }.hero-chip { border-color:rgba(255,255,255,.12)!important; background:rgba(255,255,255,.06)!important; color:#d4daeb!important; }
+.eyebrow { color:#c8c2ff!important; background:rgba(140,124,255,.13)!important; border-color:rgba(165,154,255,.30)!important; }.eyebrow-dot,.live-dot { background:#4ee6ae!important; }
+.workflow-item { border-color:var(--line)!important; background:linear-gradient(145deg,rgba(22,31,54,.94),rgba(13,20,36,.94))!important; box-shadow:none!important; }.workflow-item.active { border-color:rgba(140,124,255,.55)!important; background:rgba(140,124,255,.13)!important; }.workflow-number { background:rgba(255,255,255,.08)!important; color:#b7c2dc!important; }.workflow-item.active .workflow-number { background:var(--accent)!important; color:white!important; }.workflow-label,.section-title { color:white!important; }.workflow-copy,.section-copy { color:var(--muted)!important; }
+.section-index { border-color:rgba(255,255,255,.13)!important; background:#141d34!important; color:#a89eff!important; box-shadow:none!important; }.section-rule { background:linear-gradient(90deg,rgba(255,255,255,.13),transparent)!important; }
+[data-testid="stVerticalBlockBorderWrapper"] { border-color:var(--line)!important; background:linear-gradient(145deg,rgba(21,30,53,.94),rgba(12,18,33,.94))!important; box-shadow:0 16px 42px rgba(0,0,0,.18)!important; }
+[data-testid="stMetric"] { border-color:var(--line)!important; background:linear-gradient(145deg,rgba(27,38,66,.94),rgba(14,21,38,.94))!important; box-shadow:none!important; }.stMetricLabel p,[data-testid="stMetricLabel"] p { color:#9ca8c0!important; }.stMetricValue,[data-testid="stMetricValue"] { color:white!important; font-family:Manrope,sans-serif!important; }
+.result-card { border-color:rgba(255,255,255,.10)!important; background:radial-gradient(circle at 100% 0%,rgba(67,202,255,.25),transparent 16rem),radial-gradient(circle at 8% 100%,rgba(78,230,174,.14),transparent 18rem),linear-gradient(135deg,#172554,#0b1124)!important; }.result-card .price { font-family:Manrope,sans-serif!important; }.result-card .label,.result-model { color:#aab9dc!important; }.result-card .sub { color:#c1cae0!important; }.confidence-pill { border-color:rgba(255,255,255,.14)!important; background:rgba(255,255,255,.07)!important; }
+label,[data-testid="stWidgetLabel"] p { color:#cbd3e6!important; } [data-baseweb="select"]>div,[data-baseweb="input"]>div,.stTextInput input { border-color:rgba(255,255,255,.13)!important; background:rgba(255,255,255,.055)!important; color:#f7f8ff!important; } [data-baseweb="select"] * { color:#f7f8ff!important; } [data-baseweb="select"]>div:focus-within,[data-baseweb="input"]>div:focus-within { border-color:#8c7cff!important; box-shadow:0 0 0 3px rgba(140,124,255,.15)!important; }
+.stSlider [role="slider"] { background:#8c7cff!important; box-shadow:0 0 0 5px rgba(140,124,255,.17)!important; }.stSlider [data-baseweb="slider"]>div>div { background:rgba(255,255,255,.16)!important; }
+.stButton>button,.stDownloadButton>button { border-color:rgba(255,255,255,.14)!important; background:rgba(255,255,255,.055)!important; color:#f7f8ff!important; box-shadow:none!important; }.stButton>button:hover,.stDownloadButton>button:hover { border-color:#8c7cff!important; background:rgba(140,124,255,.14)!important; transform:translateY(-2px); }.stButton>button[kind="primary"] { border:0!important; background:linear-gradient(110deg,#7163f8,#9d8eff)!important; box-shadow:0 14px 30px rgba(105,88,255,.29)!important; }
+.info-line { border-color:rgba(140,124,255,.23)!important; background:rgba(140,124,255,.075)!important; color:#afb9ce!important; }.info-icon { background:rgba(140,124,255,.17)!important; color:#bdb5ff!important; }.warning-line { border-color:rgba(255,189,102,.23)!important; background:rgba(255,189,102,.07)!important; }.market-badge { background:rgba(140,124,255,.15)!important; color:#c7c1ff!important; }
+.winner-banner { border-color:rgba(140,124,255,.28)!important; background:linear-gradient(105deg,rgba(102,89,237,.22),rgba(17,25,47,.90))!important; }.winner-title { color:#d7d2ff!important; }.winner-copy { color:#aeb8d0!important; }.winner-tag { background:#8c7cff!important; }
+[data-testid="stDataFrame"],[data-testid="stPlotlyChart"] { border-color:var(--line)!important; background:#10182b!important; }.app-footer { border-color:var(--line)!important; color:#77839b!important; }.empty-state { border-color:rgba(255,255,255,.17)!important; background:rgba(255,255,255,.025)!important; }.empty-title { color:white!important; }.empty-copy { color:var(--muted)!important; }.empty-icon { background:rgba(140,124,255,.15)!important; color:#b6aeff!important; }
+</style>
+"""
+
+
 def apply_page_style() -> None:
     """Apply the shared visual system to the current page."""
-    st.markdown(APP_CSS, unsafe_allow_html=True)
+    st.markdown(APP_CSS + ADVANCED_CSS, unsafe_allow_html=True)
 
 
 def show_loading_shell(title: str, message: str):
@@ -719,14 +753,14 @@ def style_plotly(figure, height: int = 400):
         height=height,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": "Segoe UI, Inter, sans-serif", "color": "#6d7588", "size": 11},
-        title={"font": {"color": "#141a2a", "size": 15}, "x": 0.02},
+        font={"family": "DM Sans, Segoe UI, sans-serif", "color": "#aeb9ce", "size": 11},
+        title={"font": {"color": "#f7f8ff", "size": 15}, "x": 0.02},
         legend={"title": None, "orientation": "h", "y": 1.08, "x": 0},
         margin={"l": 10, "r": 12, "t": 58, "b": 8},
-        hoverlabel={"bgcolor": "#0a1020", "font_color": "white", "bordercolor": "#0a1020"},
+        hoverlabel={"bgcolor": "#151f38", "font_color": "white", "bordercolor": "#8c7cff"},
     )
-    figure.update_xaxes(gridcolor="#eceef5", zeroline=False, linecolor="#e1e4ed")
-    figure.update_yaxes(gridcolor="#eceef5", zeroline=False, linecolor="#e1e4ed")
+    figure.update_xaxes(gridcolor="rgba(255,255,255,.08)", zeroline=False, linecolor="rgba(255,255,255,.12)")
+    figure.update_yaxes(gridcolor="rgba(255,255,255,.08)", zeroline=False, linecolor="rgba(255,255,255,.12)")
     return figure
 
 
