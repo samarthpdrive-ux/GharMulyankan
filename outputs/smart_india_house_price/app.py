@@ -1,4 +1,4 @@
-"""Main Streamlit page: current valuation and future-price scenarios."""
+"""Premium property valuation studio."""
 
 from __future__ import annotations
 
@@ -10,9 +10,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-# Render can start Streamlit from the repository root while this file is inside
-# outputs/smart_india_house_price. Add this project folder to Python's import path
-# so the local utils package is found consistently on Windows and Linux.
 PROJECT_DIR = Path(__file__).resolve().parent
 if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
@@ -33,18 +30,15 @@ from utils.ui_utils import (
     show_sidebar,
     stepper_slider,
     style_plotly,
-    workflow_strip,
 )
 
-
-BASE_DIR = PROJECT_DIR
-DATA_PATH = BASE_DIR / "data" / "india_housing.csv"
-MODEL_PATH = BASE_DIR / "models" / "best_model.joblib"
-METADATA_PATH = BASE_DIR / "models" / "model_metadata.json"
+DATA_PATH = PROJECT_DIR / "data" / "india_housing.csv"
+MODEL_PATH = PROJECT_DIR / "models" / "best_model.joblib"
+METADATA_PATH = PROJECT_DIR / "models" / "model_metadata.json"
 
 st.set_page_config(
-    page_title="GharMulyankan | Property Valuation",
-    page_icon="🏠",
+    page_title="GharMulyankan | Valuation Studio",
+    page_icon="✦",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -52,306 +46,276 @@ apply_page_style()
 
 
 @st.cache_data(show_spinner=False)
-def load_property_data() -> pd.DataFrame:
-    """Load the real-listing dataset once per session."""
+def load_data() -> pd.DataFrame:
     return pd.read_csv(DATA_PATH)
 
 
 @st.cache_resource(show_spinner=False)
 def load_model():
-    """Load the complete preprocessing and estimator pipeline."""
     return joblib.load(MODEL_PATH)
 
 
 @st.cache_data(show_spinner=False)
 def load_metadata() -> dict:
-    """Load measured model information."""
     return json.loads(METADATA_PATH.read_text(encoding="utf-8"))
 
 
-def future_price(current_price: float, annual_rate: float, years: int) -> float:
-    """Compound a user-selected annual appreciation assumption."""
-    return float(current_price) * (1 + float(annual_rate) / 100) ** int(years)
+def future_value(value: float, growth: float, years: int) -> float:
+    return float(value) * (1 + float(growth) / 100) ** int(years)
 
 
-def optional_number(value: float) -> float | None:
-    """Convert a missing coordinate to a JSON-compatible null value."""
+def safe_coordinate(value: float) -> float | None:
     return None if pd.isna(value) or not math.isfinite(float(value)) else float(value)
 
 
-def scenario_chart(current_price: float, annual_rate: float) -> go.Figure:
-    """Build the compact 10-year appreciation scenario chart."""
+def outlook_chart(value: float, growth: float) -> go.Figure:
     years = list(range(11))
-    values = [future_price(current_price, annual_rate, year) for year in years]
-    figure = go.Figure()
-    figure.add_trace(
+    neutral = [future_value(value, growth, year) for year in years]
+    conservative = [future_value(value, max(growth - 2, 0), year) for year in years]
+    optimistic = [future_value(value, min(growth + 2, 18), year) for year in years]
+    fig = go.Figure()
+    fig.add_trace(
         go.Scatter(
             x=years,
-            y=values,
+            y=optimistic,
             mode="lines",
-            fill="tozeroy",
-            line={"color": "#625bf6", "width": 3.5, "shape": "spline"},
-            fillcolor="rgba(98,91,246,.10)",
+            name="Optimistic",
+            line={"color": "rgba(72,213,255,.55)", "width": 1.5, "dash": "dot"},
             hovertemplate="Year %{x}<br>₹%{y:,.0f}<extra></extra>",
         )
     )
-    figure.add_trace(
+    fig.add_trace(
         go.Scatter(
-            x=[0, 5, 10],
-            y=[values[0], values[5], values[10]],
-            mode="markers",
-            marker={"size": 10, "color": "#625bf6", "line": {"width": 3, "color": "white"}},
+            x=years,
+            y=conservative,
+            mode="lines",
+            name="Conservative",
+            fill="tonexty",
+            fillcolor="rgba(140,127,255,.10)",
+            line={"color": "rgba(78,226,172,.55)", "width": 1.5, "dash": "dot"},
             hovertemplate="Year %{x}<br>₹%{y:,.0f}<extra></extra>",
-            showlegend=False,
         )
     )
-    style_plotly(figure, height=310)
-    figure.update_layout(
-        margin={"l": 4, "r": 8, "t": 8, "b": 4},
-        showlegend=False,
-        hovermode="x unified",
-        xaxis={
-            "title": "Years from today",
-            "tickmode": "array",
-            "tickvals": [0, 2, 4, 6, 8, 10],
-            "gridcolor": "#eceef5",
-            "zeroline": False,
-        },
-        yaxis={
-            "title": "Scenario value",
-            "tickprefix": "₹",
-            "tickformat": "~s",
-            "gridcolor": "#eceef5",
-            "zeroline": False,
-        },
+    fig.add_trace(
+        go.Scatter(
+            x=years,
+            y=neutral,
+            mode="lines+markers",
+            name="Selected scenario",
+            line={"color": "#927fff", "width": 4, "shape": "spline"},
+            marker={"size": 5, "color": "#48d5ff"},
+            hovertemplate="Year %{x}<br>₹%{y:,.0f}<extra></extra>",
+        )
     )
-    return figure
+    style_plotly(fig, 370)
+    fig.update_layout(
+        title="Scenario corridor",
+        hovermode="x unified",
+        xaxis_title="Years from today",
+        yaxis={"title": "Estimated value", "tickprefix": "₹", "tickformat": "~s"},
+    )
+    return fig
 
 
 show_sidebar(
-    "Valuation studio",
-    "Build a property profile, compare real listings, and explore future value scenarios.",
+    "Valuation command centre",
+    "Build a precise property profile, inspect live evidence, and stress-test future value.",
 )
 show_hero(
-    "Know the number behind the address.",
-    "Turn property details into a clear market estimate, comparable evidence, and transparent 5-year and 10-year value scenarios.",
-    "AI-assisted property valuation",
-    ["8 Indian city markets", "37,084 real listings", "No fabricated comparables"],
+    "A clearer signal for every property decision.",
+    "Model valuation, local evidence and future scenarios—combined in one focused workspace built for Indian housing markets.",
+    "Live valuation intelligence",
+    ["Real listing evidence", "Instant recalculation", "Private browser saves"],
 )
-workflow_strip(active=1)
 
-if not DATA_PATH.exists() or not MODEL_PATH.exists() or not METADATA_PATH.exists():
-    st.error("The trained model is not ready. Run the training command, then refresh this page.")
-    st.code("python train_model.py\npython -m streamlit run app.py", language="powershell")
+if not all(path.exists() for path in (DATA_PATH, MODEL_PATH, METADATA_PATH)):
+    st.error(
+        "The valuation engine is incomplete. Add the dataset, trained model, and metadata files."
+    )
     st.stop()
 
-data = load_property_data()
-model = load_model()
-metadata = load_metadata()
+data, model, metadata = load_data(), load_model(), load_metadata()
 
-
-# Location selection
-section_header("01", "Select the market", "City and locality are direct model inputs")
+section_header(
+    "01",
+    "Create the market context",
+    "Location controls the model signal and comparable pool",
+)
 with st.container(border=True):
-    city_col, locality_col, count_col = st.columns([1, 1.55, .9], gap="medium")
-    cities = sorted(data["city"].dropna().astype(str).unique())
-    city_name = city_col.selectbox("City", cities)
-
-    city_data = data[data["city"].astype(str).eq(city_name)]
-    locality_counts = city_data.groupby("location").size().sort_values(ascending=False)
-    locality_name = locality_col.selectbox(
-        "Locality / nearby market", locality_counts.index.tolist()
-    )
-    requested_count = count_col.selectbox("Comparables", [5, 10, 20, 30, 50], index=1)
-    market_rows = int(locality_counts.get(locality_name, 0))
-    st.markdown(
-        f'<span class="market-badge">● {market_rows:,} locality records</span> '
-        f'<span class="tiny-note">The model prioritises {html.escape(locality_name)} and '
-        f'uses similar {html.escape(city_name)} homes only when evidence is limited.</span>',
-        unsafe_allow_html=True,
-    )
-
-
-# Property questionnaire
-section_header("02", "Describe the property", "Adjustments update the valuation automatically")
-with st.container(border=True):
-    left, right = st.columns(2, gap="large")
-    with left:
-        area = stepper_slider("Built-up area (sq.ft)", "area", 250, 10_000, 1_200, 50)
-        bhk = stepper_slider("Bedrooms / BHK", "bhk", 1, 10, 2, 1)
-        bathrooms = stepper_slider("Bathrooms", "bathrooms", 1, 10, 2, 1)
-    with right:
-        parking = stepper_slider("Parking spaces", "parking", 0, 6, 1, 1)
-        property_age = stepper_slider("Property age (years)", "property_age", 0, 80, 5, 1)
-        select_left, select_right = st.columns(2)
-        furnishing = select_left.selectbox(
-            "Furnishing", ["Unfurnished", "Semifurnished", "Furnished", "Unknown"]
+    market_col, profile_col = st.columns([0.78, 1.5], gap="large")
+    with market_col:
+        cities = sorted(data["city"].dropna().astype(str).unique())
+        city = st.selectbox("City market", cities)
+        city_data = data[data["city"].astype(str).eq(city)]
+        counts = city_data.groupby("location").size().sort_values(ascending=False)
+        locality = st.selectbox("Locality / micro-market", counts.index.tolist())
+        requested = st.select_slider(
+            "Evidence depth", options=[5, 10, 20, 30, 50], value=10
         )
-        property_type = select_right.selectbox(
-            "Property type",
-            ["Apartment", "Builder Floor", "Villa", "Independent House", "Unknown"],
+        st.markdown(
+            f'<div class="market-badge">● {int(counts.get(locality, 0)):,} source records</div>',
+            unsafe_allow_html=True,
         )
-    info_line(
-        "Source attributes that were originally missing remain missing. The saved preprocessing pipeline handles them without inventing values."
-    )
-
+        info_line(
+            f"Exact {locality} listings are ranked first; similar {city} homes fill only the remaining evidence slots."
+        )
+    with profile_col:
+        left, right = st.columns(2, gap="medium")
+        with left:
+            area = stepper_slider(
+                "Built-up area (sq.ft)", "area", 250, 10_000, 1_200, 50
+            )
+            bhk = stepper_slider("Bedrooms / BHK", "bhk", 1, 10, 2)
+            bathrooms = stepper_slider("Bathrooms", "bathrooms", 1, 10, 2)
+        with right:
+            parking = stepper_slider("Parking spaces", "parking", 0, 6, 1)
+            age = stepper_slider("Property age (years)", "property_age", 0, 80, 5)
+            one, two = st.columns(2)
+            furnishing = one.selectbox(
+                "Furnishing", ["Unfurnished", "Semifurnished", "Furnished", "Unknown"]
+            )
+            property_type = two.selectbox(
+                "Property type",
+                ["Apartment", "Builder Floor", "Villa", "Independent House", "Unknown"],
+            )
 
 model_input = pd.DataFrame(
     [
         {
-            "city": city_name,
-            "location": locality_name,
+            "city": city,
+            "location": locality,
             "area": float(area),
             "bhk": float(bhk),
             "bathrooms": float(bathrooms),
             "parking": float(parking),
-            "property_age": float(property_age),
+            "property_age": float(age),
             "furnishing": furnishing,
             "property_type": property_type,
         }
     ]
 )
-predicted_price = max(0.0, float(model.predict(model_input)[0]))
-predicted_rate = predicted_price / area
-nearby, comparison_scope, same_locality_count = find_market_comparables(
-    data, city_name, locality_name, area, bhk, int(requested_count)
+predicted = max(0.0, float(model.predict(model_input)[0]))
+comparables, scope, exact_count = find_market_comparables(
+    data, city, locality, area, bhk, int(requested)
 )
-market = get_market_statistics(nearby)
+market = get_market_statistics(comparables)
+predicted_rate = predicted / area
+market_gap = predicted - float(market["average_price"] or 0)
 
-
-# Current result
-section_header("03", "Current valuation", f"Powered by {metadata['selected_model']}")
-result_col, metrics_col = st.columns([1.08, 1], gap="medium")
-with result_col:
-    evidence_label = (
-        "Strong locality evidence" if same_locality_count >= 10 else "Limited locality evidence"
-    )
+section_header(
+    "02",
+    "Read the valuation signal",
+    f"Production model · {metadata['selected_model']}",
+)
+signal, evidence = st.columns([1.1, 1], gap="medium")
+with signal:
+    strength = "High local evidence" if exact_count >= 10 else "Limited local evidence"
     st.markdown(
-        f"""
-        <div class="result-card">
-            <div class="label">Estimated current market value</div>
-            <div class="price">{format_price(predicted_price)}</div>
-            <div class="sub">{format_price_per_sqft(predicted_rate)} · {html.escape(city_name)}</div>
-            <div class="confidence-row">
-                <span class="confidence-pill"><span class="dot"></span>{evidence_label}</span>
-                <span class="confidence-pill">{market['houses_found']} comparables analysed</span>
-            </div>
-            <div class="result-model">Model: {html.escape(metadata['selected_model'])}</div>
-        </div>
-        """,
+        f"""<div class="result-card"><div class="label">Estimated market value</div><div class="price">{format_price(predicted)}</div><div class="sub">{format_price_per_sqft(predicted_rate)} · {html.escape(locality)}, {html.escape(city)}</div><div class="confidence-row"><span class="confidence-pill"><span class="dot"></span>{strength}</span><span class="confidence-pill">{market['houses_found']} verified comparables</span></div><div class="result-model">Live pipeline · {html.escape(metadata['selected_model'])}</div></div>""",
         unsafe_allow_html=True,
     )
-with metrics_col:
-    a, b = st.columns(2)
-    a.metric("Comparable average", format_price(market["average_price"]))
-    b.metric("Comparable rate", format_price_per_sqft(market["price_per_sqft"]))
-    c, d = st.columns(2)
-    c.metric("Listings used", market["houses_found"])
-    d.metric("Exact-locality rows", same_locality_count)
-    st.markdown(
-        f'<div class="tiny-note">Comparison scope: {html.escape(comparison_scope)}</div>',
-        unsafe_allow_html=True,
+with evidence:
+    one, two = st.columns(2)
+    one.metric("Comparable average", format_price(market["average_price"]))
+    two.metric("Comparable median", format_price(market["median_price"]))
+    three, four = st.columns(2)
+    three.metric("Average market rate", format_price_per_sqft(market["price_per_sqft"]))
+    four.metric(
+        "Model vs market",
+        format_price(abs(market_gap)),
+        "Above" if market_gap >= 0 else "Below",
     )
+    info_line(f"Evidence scope: {scope}", warning=exact_count < 5)
 
-if same_locality_count < 5:
-    info_line(
-        f"Limited locality evidence: {same_locality_count} exact-locality records are available. Similar-size real listings from {city_name} complete the comparison; no properties were invented.",
-        warning=True,
-    )
-
-
-# Future scenario
-section_header("04", "Future value scenario", "Change the assumption to test different outcomes")
+section_header(
+    "03",
+    "Stress-test the outlook",
+    "Explore a selected rate plus a transparent ±2% scenario corridor",
+)
 with st.container(border=True):
-    control_col, chart_col = st.columns([.72, 1.55], gap="large")
-    with control_col:
-        growth_rate = st.slider(
-            "Annual appreciation assumption",
-            min_value=0.0,
-            max_value=15.0,
-            value=6.0,
-            step=0.5,
-            format="%.1f%% per year",
+    control, chart = st.columns([0.62, 1.55], gap="large")
+    with control:
+        growth = st.slider(
+            "Annual appreciation assumption", 0.0, 15.0, 6.0, 0.5, format="%.1f%%"
         )
-        price_5_years = future_price(predicted_price, growth_rate, 5)
-        price_10_years = future_price(predicted_price, growth_rate, 10)
-        st.metric(
-            "After 5 years",
-            format_price(price_5_years),
-            format_price(price_5_years - predicted_price),
+        value_5y, value_10y = future_value(predicted, growth, 5), future_value(
+            predicted, growth, 10
         )
         st.metric(
-            "After 10 years",
-            format_price(price_10_years),
-            format_price(price_10_years - predicted_price),
+            "Five-year scenario",
+            format_price(value_5y),
+            format_price(value_5y - predicted),
         )
-    with chart_col:
+        st.metric(
+            "Ten-year scenario",
+            format_price(value_10y),
+            format_price(value_10y - predicted),
+        )
+        st.caption(
+            "The corridor is explanatory—not a confidence interval or guaranteed forecast."
+        )
+    with chart:
         st.plotly_chart(
-            scenario_chart(predicted_price, growth_rate),
+            outlook_chart(predicted, growth),
             use_container_width=True,
             config={"displayModeBar": False},
         )
-    info_line(
-        "Scenario, not a guarantee. Future values use compound growth at your selected rate. The source data has no historical time series, so these are transparent what-if values rather than model-tested forecasts.",
-        warning=True,
-    )
 
-
-selected_coordinates = city_data.loc[
-    city_data["location"].astype(str).eq(locality_name), ["latitude", "longitude"]
+coordinates = city_data.loc[
+    city_data["location"].astype(str).eq(locality), ["latitude", "longitude"]
 ].dropna()
 latitude = (
-    optional_number(selected_coordinates["latitude"].median())
-    if not selected_coordinates.empty
-    else None
+    safe_coordinate(coordinates["latitude"].median()) if not coordinates.empty else None
 )
 longitude = (
-    optional_number(selected_coordinates["longitude"].median())
-    if not selected_coordinates.empty
+    safe_coordinate(coordinates["longitude"].median())
+    if not coordinates.empty
     else None
 )
-
-if st.button("Save this valuation", type="primary", use_container_width=True):
-    record_id = uuid4().hex[:10]
+if st.button(
+    "Save valuation to private library", type="primary", use_container_width=True
+):
     browser_history(
         component_key="valuation_browser_history",
         action="append",
         action_id=uuid4().hex,
         record={
-            "id": record_id,
+            "id": uuid4().hex[:10],
             "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "location": locality_name,
-            "city": city_name,
+            "location": locality,
+            "city": city,
             "latitude": latitude,
             "longitude": longitude,
             "area": area,
             "bhk": bhk,
             "bathrooms": bathrooms,
             "parking": parking,
-            "property_age": property_age,
+            "property_age": age,
             "furnishing": furnishing,
             "property_type": property_type,
-            "predicted_price": predicted_price,
+            "predicted_price": predicted,
             "nearby_average_price": market["average_price"],
             "nearby_price_per_sqft": market["price_per_sqft"],
             "houses_found": market["houses_found"],
-            "comparison_scope": comparison_scope,
-            "annual_growth_rate": growth_rate,
-            "projected_price_5y": price_5_years,
-            "projected_price_10y": price_10_years,
+            "comparison_scope": scope,
+            "annual_growth_rate": growth,
+            "projected_price_5y": value_5y,
+            "projected_price_10y": value_10y,
             "model_name": metadata["selected_model"],
         },
     )
-    st.toast("Valuation saved only in this browser's History", icon="✅")
+    st.toast("Valuation saved in this browser", icon="✓")
 
-
-# Evidence table
-section_header("05", "Comparable evidence", "Only real listing rows are shown")
+section_header(
+    "04",
+    "Inspect every comparable",
+    "Real source rows ordered by locality match and property similarity",
+)
 with st.container(border=True):
-    if nearby.empty:
-        st.info("No comparable rows are available in this city market.")
+    if comparables.empty:
+        st.info("No comparable records are available for this market.")
     else:
-        comparable_table = nearby[
+        table = comparables[
             [
                 "location",
                 "same_locality",
@@ -363,32 +327,32 @@ with st.container(border=True):
                 "price_per_sqft",
             ]
         ].copy()
-        comparable_table["same_locality"] = comparable_table["same_locality"].map(
-            {True: "Exact locality", False: f"Other {city_name} locality"}
+        table["same_locality"] = table["same_locality"].map(
+            {True: "Exact locality", False: f"Other {city} locality"}
         )
-        comparable_table.columns = [
+        table.columns = [
             "Location",
             "Match",
             "Area (sq.ft)",
             "BHK",
             "Bathrooms",
-            "Type",
-            "Price",
+            "Property type",
+            "Listing price",
             "₹ / sq.ft",
         ]
         st.dataframe(
-            comparable_table,
+            table,
             hide_index=True,
             use_container_width=True,
+            height=430,
             column_config={
                 "Area (sq.ft)": st.column_config.NumberColumn(format="%d"),
-                "Price": st.column_config.NumberColumn(format="₹ %d"),
+                "Listing price": st.column_config.NumberColumn(format="₹ %d"),
                 "₹ / sq.ft": st.column_config.NumberColumn(format="₹ %d"),
             },
         )
 
 st.markdown(
-    '<div class="app-footer">GharMulyankan · Model estimates support decision-making; '
-    "verify final values with a qualified local professional.</div>",
+    '<div class="app-footer">GharMulyankan · Live model estimates for decision support · Verify final values locally</div>',
     unsafe_allow_html=True,
 )
