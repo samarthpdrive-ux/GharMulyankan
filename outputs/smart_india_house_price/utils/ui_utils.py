@@ -1,46 +1,707 @@
-"""Fresh visual component system for GharMulyankan; app logic remains separate."""
+"""Aurora bento visual system shared by every GharMulyankan page."""
 
 from __future__ import annotations
 
 import html
+
 import streamlit as st
 
-CSS = """
+
+APP_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
-:root{--void:#070a13;--ink:#f7f8ff;--muted:#9ea9bf;--line:rgba(255,255,255,.10);--violet:#927fff;--aqua:#48d5ff;--mint:#4de2ac;--panel:rgba(18,25,45,.92)}
-html,body,[class*="css"]{font-family:'DM Sans',sans-serif;color:var(--ink)}.stApp{background:radial-gradient(circle at 89% 0%,rgba(103,79,242,.27),transparent 25rem),radial-gradient(circle at 3% 42%,rgba(38,194,245,.09),transparent 26rem),var(--void)}.block-container{max-width:1480px;padding:1.25rem 2rem 5rem}#MainMenu,footer,header{visibility:hidden}
-[data-testid="stSidebar"]{background:linear-gradient(180deg,#090e1d,#101933)!important;border-right:1px solid var(--line)}[data-testid="stSidebar"] *{color:#e9edfb}.brand-lockup{display:flex;align-items:center;gap:10px;padding:3px 0 20px}.brand-mark{display:grid;place-items:center;width:39px;height:39px;border-radius:13px;background:linear-gradient(135deg,#ad9fff,#5846e4);box-shadow:0 12px 25px rgba(95,74,245,.32);font-family:Manrope,sans-serif;font-weight:800}.brand-name{font-family:Manrope,sans-serif;font-weight:800;color:#fff}.brand-caption,.sidebar-foot{color:#97a3bc;font-size:.67rem}.sidebar-panel{padding:16px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.04)}.overline{color:#9d94ea;font-family:'DM Mono',monospace;font-size:.59rem;letter-spacing:.12em;text-transform:uppercase}.sidebar-panel .title{margin-top:7px;font-family:Manrope,sans-serif;font-weight:800;color:#fff}.sidebar-panel .copy{margin-top:5px;color:#aab4c9;font-size:.7rem;line-height:1.55}.live-line{display:flex;align-items:center;gap:7px;margin-top:13px;color:#9af0d0;font-size:.67rem}.live-dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 4px rgba(77,226,172,.12)}
-.hero{position:relative;overflow:hidden;min-height:300px;padding:42px;border:1px solid var(--line);border-radius:25px;background:radial-gradient(circle at 90% 10%,rgba(117,99,255,.52),transparent 18rem),radial-gradient(circle at 70% 110%,rgba(43,197,250,.16),transparent 18rem),linear-gradient(130deg,#0a1021,#172343);box-shadow:0 25px 55px rgba(0,0,0,.23)}.hero:after{content:'';position:absolute;right:-65px;bottom:-115px;width:300px;height:300px;border:1px solid rgba(255,255,255,.13);border-radius:50%;box-shadow:0 0 0 50px rgba(255,255,255,.025)}.hero-content{position:relative;z-index:1;max-width:760px}.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid rgba(167,156,255,.27);border-radius:99px;background:rgba(139,123,255,.13);color:#cdc6ff;font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.09em;text-transform:uppercase}.eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--mint)}.hero h1{margin:17px 0 10px;color:#fff;font-family:Manrope,sans-serif;font-size:clamp(2.25rem,4.8vw,4rem);font-weight:800;line-height:1.03;letter-spacing:-.065em}.hero p{margin:0;color:#b8c2d7;font-size:.93rem;line-height:1.7}.hero-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}.hero-chip{padding:7px 9px;border:1px solid rgba(255,255,255,.11);border-radius:8px;background:rgba(255,255,255,.055);color:#d5dbea;font-family:'DM Mono',monospace;font-size:.62rem}
-.workflow-strip{display:flex;gap:8px;margin:15px 0 5px}.workflow-item{flex:1;display:flex;align-items:center;gap:9px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}.workflow-item.active{border-color:rgba(146,127,255,.58);background:rgba(146,127,255,.11)}.workflow-number{display:grid;place-items:center;width:27px;height:27px;border-radius:9px;background:rgba(255,255,255,.08);color:#b9c4da;font-family:'DM Mono',monospace;font-size:.62rem}.workflow-item.active .workflow-number{background:var(--violet);color:white}.workflow-label{color:#fff;font-size:.7rem;font-weight:800}.workflow-copy{margin-top:2px;color:#929eb6;font-size:.6rem}
-.section-head{display:flex;align-items:center;gap:11px;margin:36px 0 13px}.section-index{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#141d35;color:#b5acff;font-family:'DM Mono',monospace;font-size:.65rem}.section-title{color:#fff;font-family:Manrope,sans-serif;font-size:1.05rem;font-weight:800;letter-spacing:-.035em}.section-copy{margin-top:2px;color:var(--muted);font-size:.69rem}.section-rule{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
-[data-testid="stVerticalBlockBorderWrapper"]{border:1px solid var(--line)!important;border-radius:18px!important;background:linear-gradient(145deg,rgba(23,32,57,.94),rgba(12,18,33,.95))!important;box-shadow:0 16px 42px rgba(0,0,0,.18)}[data-testid="stMetric"]{min-height:112px;padding:17px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,rgba(28,39,67,.95),rgba(14,20,37,.95))}[data-testid="stMetricLabel"] p{color:#9ba7c0!important;font-size:.67rem!important}[data-testid="stMetricValue"]{color:white!important;font-family:Manrope,sans-serif!important;font-weight:800!important;letter-spacing:-.04em}
-.result-card{min-height:245px;padding:30px;border:1px solid rgba(255,255,255,.09);border-radius:20px;background:radial-gradient(circle at 100% 0%,rgba(72,213,255,.25),transparent 16rem),radial-gradient(circle at 10% 100%,rgba(77,226,172,.14),transparent 17rem),linear-gradient(140deg,#1a2958,#0b1125);box-shadow:0 24px 55px rgba(0,0,0,.24)}.result-card .label,.result-model{color:#aebce0!important}.result-card .price{font-family:Manrope,sans-serif!important}.result-card .sub{color:#c0cae0!important}.confidence-pill{border-color:rgba(255,255,255,.13)!important;background:rgba(255,255,255,.07)!important}
-label,[data-testid="stWidgetLabel"] p{color:#ccd5e8!important;font-size:.71rem!important;font-weight:700!important}[data-baseweb="select"]>div,[data-baseweb="input"]>div,.stTextInput input{min-height:44px;border:1px solid rgba(255,255,255,.13)!important;border-radius:11px!important;background:rgba(255,255,255,.055)!important;color:#fff!important}[data-baseweb="select"] *{color:#f7f8ff!important}[data-baseweb="select"]>div:focus-within,[data-baseweb="input"]>div:focus-within{border-color:var(--violet)!important;box-shadow:0 0 0 3px rgba(146,127,255,.14)!important}.stSlider [role="slider"]{background:var(--violet)!important;box-shadow:0 0 0 5px rgba(146,127,255,.16)}.stSlider [data-baseweb="slider"]>div>div{background:rgba(255,255,255,.14)}
-.stButton>button,.stDownloadButton>button{min-height:43px;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(255,255,255,.05);color:#f7f8ff;font-weight:700;box-shadow:none}.stButton>button:hover,.stDownloadButton>button:hover{border-color:var(--violet);background:rgba(146,127,255,.13);transform:translateY(-2px)}.stButton>button[kind="primary"]{border:0;background:linear-gradient(110deg,#705ff6,#9c8cff);box-shadow:0 14px 29px rgba(106,88,246,.3)}
-.info-line{border-color:rgba(146,127,255,.25);background:rgba(146,127,255,.075);color:#b3bed3}.info-icon{background:rgba(146,127,255,.17);color:#c1b9ff}.warning-line{border-color:rgba(255,189,102,.25);background:rgba(255,189,102,.07)}.market-badge{background:rgba(146,127,255,.16);color:#c9c2ff}.winner-banner{border-color:rgba(146,127,255,.3);background:linear-gradient(105deg,rgba(101,83,235,.23),rgba(16,24,45,.95))}.winner-title{color:#ddd9ff}.winner-copy{color:#aeb9d1}.winner-tag{background:var(--violet)}[data-testid="stDataFrame"],[data-testid="stPlotlyChart"]{overflow:hidden;border:1px solid var(--line);border-radius:14px}.app-footer{border-color:var(--line);color:#758199}.empty-state{border-color:rgba(255,255,255,.17);background:rgba(255,255,255,.025)}.empty-title{color:white}.empty-copy{color:var(--muted)}
-@media(max-width:850px){.block-container{padding:1rem .85rem 3rem}.hero{padding:28px 23px;min-height:auto}.hero:after{display:none}.workflow-strip{display:grid;grid-template-columns:1fr 1fr}.section-rule{display:none}}@media(max-width:520px){.workflow-strip{grid-template-columns:1fr}}
+
+:root {
+    --canvas: #f5f6ff;
+    --surface: rgba(255, 255, 255, 0.82);
+    --surface-strong: #ffffff;
+    --ink: #18182c;
+    --muted: #6f7187;
+    --line: rgba(35, 31, 76, 0.10);
+    --violet: #6c4df6;
+    --violet-dark: #4932c7;
+    --pink: #ff5fa2;
+    --aqua: #18b7d2;
+    --lime: #72c94a;
+    --yellow: #ffcb57;
+    --shadow: 0 18px 50px rgba(54, 43, 116, 0.10);
+}
+
+html,
+body,
+[class*="css"] {
+    font-family: "DM Sans", sans-serif;
+    color: var(--ink);
+}
+
+.stApp {
+    background:
+        radial-gradient(circle at 4% 5%, rgba(255, 95, 162, 0.12), transparent 22rem),
+        radial-gradient(circle at 96% 4%, rgba(108, 77, 246, 0.16), transparent 27rem),
+        radial-gradient(circle at 50% 70%, rgba(24, 183, 210, 0.08), transparent 35rem),
+        var(--canvas);
+}
+
+.block-container {
+    max-width: 1480px;
+    padding: 1.35rem 2.1rem 5rem;
+}
+
+#MainMenu,
+footer,
+header {
+    visibility: hidden;
+}
+
+[data-testid="stSidebar"] {
+    background:
+        radial-gradient(circle at 20% 5%, rgba(255, 95, 162, 0.24), transparent 15rem),
+        linear-gradient(170deg, #17152d, #24194e 68%, #192c4e);
+    border-right: 0;
+}
+
+[data-testid="stSidebar"] * {
+    color: #f8f7ff;
+}
+
+.brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 4px 0 22px;
+}
+
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--pink), #8a62ff 58%, #29d1dd);
+    box-shadow: 0 13px 28px rgba(255, 95, 162, 0.30);
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    animation: brand-float 4s ease-in-out infinite;
+}
+
+.brand-name {
+    color: white;
+    font-family: "Manrope", sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+.brand-caption {
+    color: #bdb9d4;
+    font-family: "DM Mono", monospace;
+    font-size: 0.59rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.sidebar-panel {
+    position: relative;
+    overflow: hidden;
+    padding: 17px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(18px);
+}
+
+.sidebar-panel::after {
+    content: "";
+    position: absolute;
+    right: -30px;
+    bottom: -35px;
+    width: 95px;
+    height: 95px;
+    border-radius: 50%;
+    background: rgba(69, 211, 221, 0.12);
+}
+
+.overline {
+    color: #c8baff;
+    font-family: "DM Mono", monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.sidebar-panel .title {
+    margin-top: 8px;
+    color: white;
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+}
+
+.sidebar-panel .copy {
+    margin-top: 6px;
+    color: #c2c0d2;
+    font-size: 0.7rem;
+    line-height: 1.6;
+}
+
+.live-line {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 14px;
+    color: #99f5df;
+    font-size: 0.67rem;
+}
+
+.live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #63ebc4;
+    box-shadow: 0 0 0 5px rgba(99, 235, 196, 0.12);
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.sidebar-foot {
+    color: #a9a6bf;
+    font-size: 0.66rem;
+    line-height: 1.6;
+}
+
+.hero {
+    position: relative;
+    overflow: hidden;
+    min-height: 340px;
+    padding: 46px 48px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 30px;
+    background:
+        radial-gradient(circle at 88% 18%, rgba(255, 255, 255, 0.34), transparent 16rem),
+        linear-gradient(120deg, #4e35d3 0%, #7657f5 46%, #dc58b2 76%, #f59a69 100%);
+    box-shadow: 0 28px 70px rgba(87, 55, 190, 0.23);
+    isolation: isolate;
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.26;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+    background-size: 45px 45px;
+    mask-image: linear-gradient(90deg, black, transparent 85%);
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+    right: -55px;
+    bottom: -105px;
+    width: 310px;
+    height: 310px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 42% 58% 63% 37%;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 44px rgba(255, 255, 255, 0.04);
+    animation: morph-orb 9s ease-in-out infinite;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 780px;
+}
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 11px;
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.13);
+    color: white;
+    font-family: "DM Mono", monospace;
+    font-size: 0.61rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    backdrop-filter: blur(12px);
+}
+
+.eyebrow-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #adffe3;
+    box-shadow: 0 0 0 4px rgba(173, 255, 227, 0.13);
+}
+
+.hero h1 {
+    max-width: 760px;
+    margin: 18px 0 11px;
+    color: white;
+    font-family: "Manrope", sans-serif;
+    font-size: clamp(2.45rem, 5vw, 4.4rem);
+    font-weight: 800;
+    line-height: 1.01;
+    letter-spacing: -0.07em;
+}
+
+.hero p {
+    max-width: 690px;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.95rem;
+    line-height: 1.75;
+}
+
+.hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 24px;
+}
+
+.hero-chip {
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    font-family: "DM Mono", monospace;
+    font-size: 0.61rem;
+    backdrop-filter: blur(12px);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.hero-chip:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.20);
+}
+
+.workflow-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 16px 0 6px;
+}
+
+.workflow-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 17px;
+    background: var(--surface);
+    box-shadow: 0 10px 28px rgba(58, 46, 116, 0.06);
+    backdrop-filter: blur(18px);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.workflow-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+}
+
+.workflow-item.active {
+    color: white;
+    border-color: transparent;
+    background: linear-gradient(130deg, var(--violet), #9875ff);
+}
+
+.workflow-number {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border-radius: 10px;
+    background: #eeeaff;
+    color: var(--violet);
+    font-family: "DM Mono", monospace;
+    font-size: 0.64rem;
+    font-weight: 500;
+}
+
+.workflow-item.active .workflow-number {
+    background: rgba(255, 255, 255, 0.18);
+    color: white;
+}
+
+.workflow-label {
+    color: var(--ink);
+    font-size: 0.71rem;
+    font-weight: 800;
+}
+
+.workflow-copy {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.61rem;
+}
+
+.workflow-item.active .workflow-label,
+.workflow-item.active .workflow-copy {
+    color: white;
+}
+
+.section-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 40px 0 14px;
+}
+
+.section-index {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #e8e2ff, #ffe5f1);
+    color: var(--violet-dark);
+    font-family: "DM Mono", monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+
+.section-title {
+    color: var(--ink);
+    font-family: "Manrope", sans-serif;
+    font-size: 1.08rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+.section-copy {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.7rem;
+}
+
+.section-rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--line), transparent);
+}
+
+[data-testid="stVerticalBlockBorderWrapper"] {
+    border: 1px solid rgba(255, 255, 255, 0.9) !important;
+    border-radius: 22px !important;
+    background: var(--surface) !important;
+    box-shadow: var(--shadow) !important;
+    backdrop-filter: blur(22px);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    box-shadow: 0 25px 70px rgba(69, 51, 145, 0.14) !important;
+}
+
+[data-testid="stMetric"] {
+    position: relative;
+    overflow: hidden;
+    min-height: 120px;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 19px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 12px 34px rgba(52, 42, 112, 0.08);
+    animation: card-arrive 0.55s ease both;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+[data-testid="stMetric"]::after {
+    content: "";
+    position: absolute;
+    right: -26px;
+    top: -30px;
+    width: 92px;
+    height: 92px;
+    border-radius: 36% 64% 55% 45%;
+    background: linear-gradient(135deg, rgba(108, 77, 246, 0.12), rgba(255, 95, 162, 0.12));
+    animation: morph-orb 7s ease-in-out infinite;
+}
+
+[data-testid="stMetric"]:hover {
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 0 21px 52px rgba(70, 53, 145, 0.15);
+}
+
+[data-testid="stMetricLabel"] p {
+    color: var(--muted) !important;
+    font-size: 0.69rem !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--ink) !important;
+    font-family: "Manrope", sans-serif !important;
+    font-size: 1.35rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.045em;
+}
+
+.result-card {
+    position: relative;
+    overflow: hidden;
+    min-height: 255px;
+    padding: 32px;
+    border: 0;
+    border-radius: 25px;
+    background:
+        radial-gradient(circle at 95% 10%, rgba(255, 255, 255, 0.22), transparent 13rem),
+        linear-gradient(135deg, #24205c, #6549de 53%, #d052a7);
+    box-shadow: 0 24px 60px rgba(86, 56, 186, 0.28);
+    animation: card-arrive 0.6s ease both;
+}
+
+.result-card::after {
+    content: "";
+    position: absolute;
+    right: 30px;
+    bottom: 26px;
+    width: 85px;
+    height: 85px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 30px;
+    transform: rotate(14deg);
+    animation: card-spin 8s ease-in-out infinite;
+}
+
+.result-card .label {
+    color: #d8d2fb;
+}
+
+.result-card .price {
+    color: white;
+    font-family: "Manrope", sans-serif;
+}
+
+.result-card .sub,
+.result-model {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.confidence-pill {
+    border-color: rgba(255, 255, 255, 0.20) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: white !important;
+}
+
+label,
+[data-testid="stWidgetLabel"] p {
+    color: #3e3f58 !important;
+    font-size: 0.73rem !important;
+    font-weight: 700 !important;
+}
+
+[data-baseweb="select"] > div,
+[data-baseweb="input"] > div,
+.stTextInput input {
+    min-height: 45px;
+    border: 1px solid rgba(59, 49, 116, 0.12) !important;
+    border-radius: 13px !important;
+    background: rgba(248, 248, 255, 0.90) !important;
+    color: var(--ink) !important;
+}
+
+[data-baseweb="select"] > div:focus-within,
+[data-baseweb="input"] > div:focus-within {
+    border-color: var(--violet) !important;
+    box-shadow: 0 0 0 4px rgba(108, 77, 246, 0.10) !important;
+}
+
+.stSlider [role="slider"] {
+    background: linear-gradient(135deg, var(--violet), var(--pink)) !important;
+    box-shadow: 0 0 0 5px rgba(108, 77, 246, 0.12);
+}
+
+.stButton > button,
+.stDownloadButton > button {
+    min-height: 45px;
+    border: 1px solid rgba(65, 50, 140, 0.13);
+    border-radius: 13px;
+    background: white;
+    color: var(--ink);
+    font-weight: 800;
+    box-shadow: 0 8px 22px rgba(60, 45, 130, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    color: var(--violet);
+    border-color: rgba(108, 77, 246, 0.35);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px rgba(70, 53, 145, 0.15);
+}
+
+.stButton > button[kind="primary"] {
+    border: 0;
+    background: linear-gradient(110deg, var(--violet), #9169ff 55%, var(--pink));
+    color: white;
+    box-shadow: 0 15px 34px rgba(108, 77, 246, 0.28);
+}
+
+.info-line {
+    border-color: rgba(108, 77, 246, 0.13);
+    background: linear-gradient(110deg, rgba(108, 77, 246, 0.07), rgba(24, 183, 210, 0.05));
+    color: #686a80;
+}
+
+.info-icon {
+    background: #e9e4ff;
+    color: var(--violet);
+}
+
+.warning-line {
+    border-color: rgba(255, 170, 72, 0.23);
+    background: rgba(255, 197, 91, 0.10);
+}
+
+.market-badge {
+    background: linear-gradient(110deg, #e9e4ff, #ffe4f0);
+    color: var(--violet-dark);
+}
+
+.winner-banner {
+    border: 0;
+    background: linear-gradient(115deg, #e7e1ff, #ffe4f0 58%, #e3faff);
+    box-shadow: var(--shadow);
+}
+
+.winner-title {
+    color: #302363;
+}
+
+.winner-copy {
+    color: #71658f;
+}
+
+.winner-tag {
+    background: linear-gradient(110deg, var(--violet), var(--pink));
+}
+
+[data-testid="stDataFrame"],
+[data-testid="stPlotlyChart"] {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 19px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: var(--shadow);
+}
+
+.empty-state {
+    border-color: rgba(108, 77, 246, 0.20);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(237, 232, 255, 0.85));
+    box-shadow: var(--shadow);
+}
+
+.empty-icon {
+    background: linear-gradient(135deg, #e7e1ff, #ffe2ef);
+    color: var(--violet);
+}
+
+.empty-title {
+    color: var(--ink);
+}
+
+.empty-copy,
+.tiny-note {
+    color: var(--muted);
+}
+
+.app-footer {
+    border-color: var(--line);
+    color: #85869a;
+}
+
+@keyframes brand-float {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-4px) rotate(3deg); }
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.65; transform: scale(0.82); }
+}
+
+@keyframes morph-orb {
+    0%, 100% { border-radius: 42% 58% 63% 37%; transform: rotate(0); }
+    50% { border-radius: 63% 37% 40% 60%; transform: rotate(8deg); }
+}
+
+@keyframes card-arrive {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes card-spin {
+    0%, 100% { transform: rotate(14deg) scale(1); }
+    50% { transform: rotate(22deg) scale(1.07); }
+}
+
+@media (max-width: 850px) {
+    .block-container { padding: 1rem 0.85rem 3rem; }
+    .hero { min-height: auto; padding: 31px 24px; border-radius: 23px; }
+    .hero::after { display: none; }
+    .hero h1 { font-size: 2.45rem; }
+    .workflow-strip { grid-template-columns: 1fr 1fr; }
+    .section-rule { display: none; }
+}
+
+@media (max-width: 520px) {
+    .workflow-strip { grid-template-columns: 1fr; }
+    .hero-chips { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
 </style>
 """
 
 
 def apply_page_style() -> None:
-    st.markdown(CSS, unsafe_allow_html=True)
+    st.markdown(APP_CSS, unsafe_allow_html=True)
 
 
 def show_sidebar(context: str, description: str) -> None:
     with st.sidebar:
         st.markdown(
-            '<div class="brand-lockup"><span class="brand-mark">G</span><div><div class="brand-name">GharMulyankan</div><div class="brand-caption">India property intelligence</div></div></div>',
+            """
+            <div class="brand-lockup">
+                <span class="brand-mark">G</span>
+                <div>
+                    <div class="brand-name">GharMulyankan</div>
+                    <div class="brand-caption">Property decision system</div>
+                </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
         st.markdown(
-            f'<div class="sidebar-panel"><div class="overline">Workspace</div><div class="title">{html.escape(context)}</div><div class="copy">{html.escape(description)}</div><div class="live-line"><span class="live-dot"></span>Live market engine</div></div>',
+            f"""
+            <div class="sidebar-panel">
+                <div class="overline">Active workspace</div>
+                <div class="title">{html.escape(context)}</div>
+                <div class="copy">{html.escape(description)}</div>
+                <div class="live-line"><span class="live-dot"></span>Live intelligence connected</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
         st.markdown("---")
         st.markdown(
-            '<div class="sidebar-foot">Estimates support decisions. Verify a final price with local experts.</div>',
+            '<div class="sidebar-foot">Independent decision support built from real listing evidence. Verify final transactions locally.</div>',
             unsafe_allow_html=True,
         )
 
@@ -52,44 +713,68 @@ def show_hero(
     chips: list[str] | None = None,
 ) -> None:
     chip_html = "".join(
-        f'<span class="hero-chip">{html.escape(item)}</span>' for item in (chips or [])
+        f'<span class="hero-chip">{html.escape(chip)}</span>'
+        for chip in (chips or [])
     )
     st.markdown(
-        f'<div class="hero"><div class="hero-content"><div class="eyebrow"><span class="eyebrow-dot"></span>{html.escape(eyebrow)}</div><h1>{html.escape(title)}</h1><p>{html.escape(subtitle)}</p><div class="hero-chips">{chip_html}</div></div></div>',
+        f"""
+        <div class="hero">
+            <div class="hero-content">
+                <div class="eyebrow"><span class="eyebrow-dot"></span>{html.escape(eyebrow)}</div>
+                <h1>{html.escape(title)}</h1>
+                <p>{html.escape(subtitle)}</p>
+                <div class="hero-chips">{chip_html}</div>
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
 
 def workflow_strip(active: int = 1) -> None:
     stages = [
-        ("Market", "Find the area"),
-        ("Profile", "Set the home"),
-        ("Value", "Read the signal"),
-        ("Outlook", "Test scenarios"),
+        ("Locate", "Choose the market"),
+        ("Shape", "Build the property"),
+        ("Read", "Decode the signal"),
+        ("Explore", "Test the future"),
     ]
-    html_items = []
+    cards = []
     for index, (label, copy) in enumerate(stages, start=1):
-        active_css = " active" if active == index else ""
-        html_items.append(
-            f'<div class="workflow-item{active_css}"><span class="workflow-number">{index:02d}</span><div><div class="workflow-label">{label}</div><div class="workflow-copy">{copy}</div></div></div>'
+        active_class = " active" if index == active else ""
+        cards.append(
+            f'<div class="workflow-item{active_class}">'
+            f'<span class="workflow-number">{index:02d}</span>'
+            f'<div><div class="workflow-label">{html.escape(label)}</div>'
+            f'<div class="workflow-copy">{html.escape(copy)}</div></div></div>'
         )
     st.markdown(
-        f'<div class="workflow-strip">{"".join(html_items)}</div>',
+        '<div class="workflow-strip">' + "".join(cards) + "</div>",
         unsafe_allow_html=True,
     )
 
 
 def section_header(number: str, title: str, copy: str = "") -> None:
     st.markdown(
-        f'<div class="section-head"><span class="section-index">{html.escape(str(number))}</span><div><div class="section-title">{html.escape(title)}</div><div class="section-copy">{html.escape(copy)}</div></div><span class="section-rule"></span></div>',
+        f"""
+        <div class="section-head">
+            <span class="section-index">{html.escape(str(number))}</span>
+            <div>
+                <div class="section-title">{html.escape(title)}</div>
+                <div class="section-copy">{html.escape(copy)}</div>
+            </div>
+            <span class="section-rule"></span>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
 
 def info_line(message: str, warning: bool = False) -> None:
     modifier = " warning-line" if warning else ""
+    symbol = "!" if warning else "i"
     st.markdown(
-        f'<div class="info-line{modifier}"><span class="info-icon">{"!" if warning else "i"}</span><span>{html.escape(message)}</span></div>',
+        f'<div class="info-line{modifier}"><span class="info-icon">{symbol}</span>'
+        f"<span>{html.escape(message)}</span></div>",
         unsafe_allow_html=True,
     )
 
@@ -99,39 +784,46 @@ def style_plotly(figure, height: int = 400):
         height=height,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": "DM Sans", "color": "#aeb9ce", "size": 11},
+        font={"family": "DM Sans", "color": "#77788d", "size": 11},
         title={
-            "font": {"family": "Manrope", "color": "#f7f8ff", "size": 15},
+            "font": {"family": "Manrope", "color": "#18182c", "size": 15},
             "x": 0.02,
         },
         legend={"title": None, "orientation": "h", "y": 1.1, "x": 0},
         margin={"l": 10, "r": 12, "t": 58, "b": 10},
         hoverlabel={
-            "bgcolor": "#151f38",
+            "bgcolor": "#29204f",
             "font_color": "white",
-            "bordercolor": "#8c7cff",
+            "bordercolor": "#8f72ff",
         },
     )
     figure.update_xaxes(
-        gridcolor="rgba(255,255,255,.08)",
+        gridcolor="rgba(65,52,125,.09)",
         zeroline=False,
-        linecolor="rgba(255,255,255,.12)",
+        linecolor="rgba(65,52,125,.12)",
     )
     figure.update_yaxes(
-        gridcolor="rgba(255,255,255,.08)",
+        gridcolor="rgba(65,52,125,.09)",
         zeroline=False,
-        linecolor="rgba(255,255,255,.12)",
+        linecolor="rgba(65,52,125,.12)",
     )
     return figure
 
 
 def show_loading_shell(title: str, message: str):
-    holder = st.empty()
-    holder.markdown(
-        f'<div class="sidebar-panel"><div class="overline">Loading</div><div class="title">{html.escape(title)}</div><div class="copy">{html.escape(message)}</div></div>',
+    placeholder = st.empty()
+    placeholder.markdown(
+        f"""
+        <div class="sidebar-panel">
+            <div class="overline">Preparing intelligence</div>
+            <div class="title">{html.escape(title)}</div>
+            <div class="copy">{html.escape(message)}</div>
+            <div class="live-line"><span class="live-dot"></span>Processing live records</div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
-    return holder
+    return placeholder
 
 
 def complete_loading_shell(placeholder, title: str, message: str) -> None:
@@ -141,10 +833,14 @@ def complete_loading_shell(placeholder, title: str, message: str) -> None:
     )
 
 
-def _change_value(key: str, amount: float, minimum: float, maximum: float) -> None:
-    st.session_state[key] = min(
-        maximum, max(minimum, st.session_state.get(key, minimum) + amount)
-    )
+def _change_value(
+    key: str,
+    amount: float,
+    minimum: float,
+    maximum: float,
+) -> None:
+    current = st.session_state.get(key, minimum)
+    st.session_state[key] = min(maximum, max(minimum, current + amount))
 
 
 def stepper_slider(
@@ -158,7 +854,11 @@ def stepper_slider(
 ) -> int:
     if key not in st.session_state:
         st.session_state[key] = default
-    left, middle, right = st.columns([0.55, 5, 0.55], vertical_alignment="bottom")
+
+    left, middle, right = st.columns(
+        [0.55, 5, 0.55],
+        vertical_alignment="bottom",
+    )
     left.button(
         "−",
         key=f"{key}_minus",
@@ -166,7 +866,14 @@ def stepper_slider(
         args=(key, -step, minimum, maximum),
         use_container_width=True,
     )
-    value = middle.slider(label, minimum, maximum, step=step, key=key, help=help_text)
+    value = middle.slider(
+        label,
+        minimum,
+        maximum,
+        step=step,
+        key=key,
+        help=help_text,
+    )
     right.button(
         "+",
         key=f"{key}_plus",
