@@ -30,6 +30,7 @@ from utils.ui_utils import (
     show_sidebar,
     stepper_slider,
     style_plotly,
+    workflow_strip,
 )
 
 DATA_PATH = PROJECT_DIR / "data" / "india_housing.csv"
@@ -127,6 +128,7 @@ show_hero(
     "Live valuation intelligence",
     ["Real listing evidence", "Instant recalculation", "Private browser saves"],
 )
+workflow_strip(active=1)
 
 if not all(path.exists() for path in (DATA_PATH, MODEL_PATH, METADATA_PATH)):
     st.error(
