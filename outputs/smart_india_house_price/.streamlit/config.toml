@@ -1,13 +1,13 @@
 [theme]
 base = "light"
-primaryColor = "#625BF6"
-backgroundColor = "#F3F5FA"
+primaryColor = "#6C4DF6"
+backgroundColor = "#F5F6FF"
 secondaryBackgroundColor = "#FFFFFF"
-textColor = "#141A2A"
+textColor = "#18182C"
 font = "sans serif"
 baseRadius = "0.75rem"
 buttonRadius = "0.75rem"
-borderColor = "#E5E8F1"
+borderColor = "#E2DFF0"
 showWidgetBorder = true
 showSidebarBorder = false
 
