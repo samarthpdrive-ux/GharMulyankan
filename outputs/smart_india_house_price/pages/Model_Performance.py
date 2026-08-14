@@ -1,68 +1,226 @@
-"""Production model observatory."""
+"""Production model performance observatory."""
 
 from __future__ import annotations
 
+import html
 import json
+import sys
 from pathlib import Path
+from textwrap import dedent
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from utils.price_utils import format_price
-from utils.ui_utils import (
-    apply_page_style,
-    info_line,
-    section_header,
-    show_hero,
-    show_sidebar,
-    style_plotly,
-)
 
+# ---------------------------------------------------------------------
+# PROJECT SETUP
+# ---------------------------------------------------------------------
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-METADATA_PATH = BASE_DIR / "models" / "model_metadata.json"
+
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+from utils.price_utils import format_price
+from utils.ui_utils import apply_page_style, style_plotly
+
+
+METADATA_PATH = (
+    BASE_DIR
+    / "models"
+    / "model_metadata.json"
+)
 
 
 st.set_page_config(
     page_title="Model Observatory | GharMulyankan",
-    page_icon="◇",
+    page_icon="📊",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 apply_page_style()
 
 
-show_sidebar(
-    "Model observatory",
-    (
-        "Audit the production decision, measured test errors, "
-        "feature surface and training provenance."
-    ),
-)
+# ---------------------------------------------------------------------
+# SAFE HTML COMPONENTS
+# ---------------------------------------------------------------------
+
+def render_html(markup: str) -> None:
+    """Render HTML without Markdown indentation problems."""
+    st.html(dedent(markup).strip())
 
 
-return_home = st.button(
-    "← Return to valuation studio",
-    key="model_return_home",
-    use_container_width=True,
-)
+def show_sidebar(context: str, description: str) -> None:
+    with st.sidebar:
+        render_html(
+            """
+            <div class="brand-lockup">
+                <span class="brand-mark">G</span>
 
-if return_home:
-    st.switch_page(
-        "app.py"
+                <div>
+                    <div class="brand-name">
+                        GharMulyankan
+                    </div>
+
+                    <div class="brand-caption">
+                        Property decision system
+                    </div>
+                </div>
+            </div>
+            """
+        )
+
+        render_html(
+            f"""
+            <div class="sidebar-panel">
+                <div class="overline">
+                    Active workspace
+                </div>
+
+                <div class="title">
+                    {html.escape(context)}
+                </div>
+
+                <div class="copy">
+                    {html.escape(description)}
+                </div>
+
+                <div class="live-line">
+                    <span class="live-dot"></span>
+                    Production metadata connected
+                </div>
+            </div>
+            """
+        )
+
+        st.divider()
+
+        render_html(
+            """
+            <div class="sidebar-foot">
+                Performance values are loaded directly from
+                the saved production training metadata.
+            </div>
+            """
+        )
+
+
+def show_hero(
+    title: str,
+    subtitle: str,
+    eyebrow: str,
+    chips: list[str],
+) -> None:
+    chip_markup = "".join(
+        f'<span class="hero-chip">{html.escape(chip)}</span>'
+        for chip in chips
+    )
+
+    render_html(
+        f"""
+        <div class="hero">
+            <div class="hero-content">
+                <div class="eyebrow">
+                    <span class="eyebrow-dot"></span>
+                    {html.escape(eyebrow)}
+                </div>
+
+                <h1>
+                    {html.escape(title)}
+                </h1>
+
+                <p>
+                    {html.escape(subtitle)}
+                </p>
+
+                <div class="hero-chips">
+                    {chip_markup}
+                </div>
+            </div>
+        </div>
+        """
     )
 
 
-show_hero(
-    "Trust starts with visible evidence.",
-    (
-        "Inspect the exact held-out results behind the live "
-        "valuation model and understand how the production "
-        "pipeline was selected."
-    ),
+def section_header(
+    number: str,
+    title: str,
+    description: str,
+) -> None:
+    render_html(
+        f"""
+        <div class="section-head">
+            <span class="section-index">
+                {html.escape(number)}
+            </span>
+
+            <div>
+                <div class="section-title">
+                    {html.escape(title)}
+                </div>
+
+                <div class="section-copy">
+                    {html.escape(description)}
+                </div>
+            </div>
+
+            <span class="section-rule"></span>
+        </div>
+        """
+    )
+
+
+def info_line(
+    message: str,
+    warning: bool = False,
+) -> None:
+    modifier = " warning-line" if warning else ""
+    symbol = "!" if warning else "i"
+
+    render_html(
+        f"""
+        <div class="info-line{modifier}">
+            <span class="info-icon">
+                {symbol}
+            </span>
+
+            <span>
+                {html.escape(message)}
+            </span>
+        </div>
+        """
+    )
+
+
+# ---------------------------------------------------------------------
+# PAGE HEADER
+# ---------------------------------------------------------------------
+
+show_sidebar(
     "Model observatory",
-    [
+    (
+        "Audit production-model selection, measured test errors, "
+        "feature inputs and training provenance."
+    ),
+)
+
+if st.button(
+    "← Return to valuation studio",
+    key="model_return_home",
+    use_container_width=True,
+):
+    st.switch_page("app.py")
+
+show_hero(
+    title="Trust starts with visible evidence.",
+    subtitle=(
+        "Inspect the exact held-out results behind the live valuation "
+        "model and understand how the production pipeline was selected."
+    ),
+    eyebrow="Model observatory",
+    chips=[
         "Same held-out split",
         "Measured—not claimed",
         "Traceable training metadata",
@@ -70,82 +228,138 @@ show_hero(
 )
 
 
+# ---------------------------------------------------------------------
+# LOAD MODEL METADATA
+# ---------------------------------------------------------------------
+
 if not METADATA_PATH.exists():
     st.error(
-        "Model metadata missing. "
-        "Run train_model.py."
+        "Model metadata is missing. Run train_model.py "
+        "before opening this page."
     )
     st.stop()
 
 
-metadata = json.loads(
-    METADATA_PATH.read_text(
-        encoding="utf-8"
+try:
+    metadata = json.loads(
+        METADATA_PATH.read_text(
+            encoding="utf-8"
+        )
     )
-)
+
+except (OSError, json.JSONDecodeError) as error:
+    st.error(
+        f"Model metadata could not be loaded: {error}"
+    )
+    st.stop()
+
+
+required_metadata = [
+    "selected_model",
+    "metrics",
+    "dataset_rows",
+    "training_rows",
+    "test_rows",
+]
+
+missing_metadata = [
+    key
+    for key in required_metadata
+    if key not in metadata
+]
+
+if missing_metadata:
+    st.error(
+        "The metadata file is incomplete. Missing fields: "
+        + ", ".join(missing_metadata)
+    )
+    st.stop()
 
 
 metrics = (
-    pd.DataFrame(
-        metadata["metrics"]
-    )
+    pd.DataFrame(metadata["metrics"])
     .T
-    .reset_index(
-        names="Model"
+    .reset_index(names="Model")
+)
+
+for metric_column in ["MAE", "RMSE", "R2"]:
+    if metric_column in metrics.columns:
+        metrics[metric_column] = pd.to_numeric(
+            metrics[metric_column],
+            errors="coerce",
+        )
+
+
+if metrics.empty:
+    st.error(
+        "No model performance metrics were found."
     )
-)
+    st.stop()
 
 
-metric_one, metric_two, metric_three, metric_four = (
-    st.columns(4)
-)
+# ---------------------------------------------------------------------
+# MODEL SUMMARY
+# ---------------------------------------------------------------------
 
+metric_one, metric_two, metric_three, metric_four = st.columns(4)
 
 metric_one.metric(
     "Production model",
     metadata["selected_model"],
 )
 
-
 metric_two.metric(
     "Dataset",
-    f"{metadata['dataset_rows']:,}",
+    f"{int(metadata['dataset_rows']):,}",
 )
-
 
 metric_three.metric(
     "Training cohort",
-    f"{metadata['training_rows']:,}",
+    f"{int(metadata['training_rows']):,}",
 )
-
 
 metric_four.metric(
     "Holdout cohort",
-    f"{metadata['test_rows']:,}",
+    f"{int(metadata['test_rows']):,}",
 )
 
+
+# ---------------------------------------------------------------------
+# SELECTION DECISION
+# ---------------------------------------------------------------------
 
 section_header(
     "01",
     "Selection decision",
     (
-        "The production candidate minimises RMSE "
-        "on the same unseen test cohort"
+        "The production candidate minimises RMSE using "
+        "the same unseen test cohort."
     ),
 )
 
+selected_model = html.escape(
+    str(metadata["selected_model"])
+)
 
-st.markdown(
+selection_rule = html.escape(
+    str(
+        metadata.get(
+            "selection_rule",
+            "Lowest measured holdout RMSE.",
+        )
+    )
+)
+
+render_html(
     f"""
     <div class="winner-banner">
         <div>
             <div class="winner-title">
-                {metadata["selected_model"]}
-                is serving live estimates
+                {selected_model} is serving live estimates
             </div>
 
             <div class="winner-copy">
-                {metadata["selection_rule"]}
+                {selection_rule}
             </div>
         </div>
 
@@ -153,34 +367,35 @@ st.markdown(
             PRODUCTION
         </span>
     </div>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 
-error_column, score_column = st.columns(
-    [
-        1.45,
-        1,
-    ],
+# ---------------------------------------------------------------------
+# PERFORMANCE CHARTS
+# ---------------------------------------------------------------------
+
+error_column, r2_column = st.columns(
+    [1.45, 1],
     gap="large",
 )
 
-
 with error_column:
+    required_error_columns = [
+        column
+        for column in ["MAE", "RMSE"]
+        if column in metrics.columns
+    ]
+
     error_data = metrics.melt(
         id_vars="Model",
-        value_vars=[
-            "MAE",
-            "RMSE",
-        ],
+        value_vars=required_error_columns,
         var_name="Metric",
         value_name="Rupees",
     )
 
     error_data["Error (Lakh)"] = (
-        error_data["Rupees"]
-        / 100_000
+        error_data["Rupees"] / 100_000
     )
 
     error_figure = px.bar(
@@ -196,13 +411,15 @@ with error_column:
         title="Measured prediction error",
     )
 
-    style_plotly(
-        error_figure,
-        height=430,
-    )
+    style_plotly(error_figure, 430)
 
     error_figure.update_traces(
-        marker_line_width=0
+        marker_line_width=0,
+        hovertemplate=(
+            "<b>%{x}</b><br>"
+            "Error: %{y:.2f} lakh"
+            "<extra></extra>"
+        ),
     )
 
     st.plotly_chart(
@@ -210,78 +427,106 @@ with error_column:
         use_container_width=True,
         config={
             "displayModeBar": False,
+            "scrollZoom": False,
         },
     )
 
 
-with score_column:
-    score_figure = px.bar(
-        metrics,
-        x="Model",
-        y="R2",
-        text=metrics["R2"].map(
-            lambda value: f"{value:.3f}"
-        ),
-        color="Model",
-        color_discrete_sequence=[
-            "#927fff",
-            "#48d5ff",
-        ],
-        title="Explained variance · R²",
-    )
+with r2_column:
+    if "R2" not in metrics.columns:
+        st.info(
+            "R² values are not present in the metadata."
+        )
 
-    style_plotly(
-        score_figure,
-        height=430,
-    )
+    else:
+        r2_figure = px.bar(
+            metrics,
+            x="Model",
+            y="R2",
+            text=metrics["R2"].map(
+                lambda value: (
+                    f"{value:.3f}"
+                    if pd.notna(value)
+                    else "N/A"
+                )
+            ),
+            color="Model",
+            color_discrete_sequence=[
+                "#927fff",
+                "#48d5ff",
+                "#4de2ac",
+                "#ff9f6e",
+            ],
+            title="Explained variance · R²",
+        )
 
-    score_figure.update_layout(
-        showlegend=False
-    )
+        style_plotly(r2_figure, 430)
 
-    score_figure.update_traces(
-        textposition="outside"
-    )
+        r2_figure.update_layout(
+            showlegend=False,
+        )
 
-    st.plotly_chart(
-        score_figure,
-        use_container_width=True,
-        config={
-            "displayModeBar": False,
-        },
-    )
+        r2_figure.update_traces(
+            textposition="outside",
+            marker_line_width=0,
+            hovertemplate=(
+                "<b>%{x}</b><br>"
+                "R²: %{y:.4f}"
+                "<extra></extra>"
+            ),
+        )
 
+        st.plotly_chart(
+            r2_figure,
+            use_container_width=True,
+            config={
+                "displayModeBar": False,
+                "scrollZoom": False,
+            },
+        )
+
+
+# ---------------------------------------------------------------------
+# AUDIT TABLE
+# ---------------------------------------------------------------------
 
 section_header(
     "02",
     "Audit table",
     (
-        "Exact values persisted by "
-        "the latest training run"
+        "Exact evaluation values persisted by the "
+        "latest training run."
     ),
 )
 
-
 audit_table = metrics.copy()
 
-audit_table["MAE"] = (
-    audit_table["MAE"]
-    .map(format_price)
-)
-
-audit_table["RMSE"] = (
-    audit_table["RMSE"]
-    .map(format_price)
-)
-
-audit_table["R²"] = (
-    audit_table
-    .pop("R2")
-    .map(
-        lambda value: f"{value:.4f}"
+if "MAE" in audit_table.columns:
+    audit_table["MAE"] = audit_table["MAE"].map(
+        lambda value: (
+            format_price(float(value))
+            if pd.notna(value)
+            else "Not available"
+        )
     )
-)
 
+if "RMSE" in audit_table.columns:
+    audit_table["RMSE"] = audit_table["RMSE"].map(
+        lambda value: (
+            format_price(float(value))
+            if pd.notna(value)
+            else "Not available"
+        )
+    )
+
+if "R2" in audit_table.columns:
+    audit_table["R²"] = audit_table.pop("R2").map(
+        lambda value: (
+            f"{value:.4f}"
+            if pd.notna(value)
+            else "Not available"
+        )
+    )
 
 st.dataframe(
     audit_table,
@@ -290,84 +535,126 @@ st.dataframe(
 )
 
 
+# ---------------------------------------------------------------------
+# MODEL SURFACE AND PROVENANCE
+# ---------------------------------------------------------------------
+
 section_header(
     "03",
     "Model surface",
-    (
-        "Inputs, reproducibility "
-        "and provenance"
-    ),
+    "Inputs, reproducibility information and training provenance.",
 )
-
 
 feature_column, provenance_column = st.columns(
     2,
     gap="large",
 )
 
-
 with feature_column:
-    with st.container(
-        border=True,
-    ):
-        st.markdown(
-            "#### Feature contract"
+    with st.container(border=True):
+        st.subheader("Feature contract")
+
+        features = metadata.get(
+            "features",
+            [],
         )
 
-        st.write(
-            " · ".join(
-                metadata.get(
-                    "features",
-                    [],
-                )
+        if features:
+            feature_chips = "".join(
+                f"""
+                <span class="hero-chip">
+                    {html.escape(str(feature))}
+                </span>
+                """
+                for feature in features
             )
-        )
+
+            render_html(
+                f"""
+                <div class="hero-chips">
+                    {feature_chips}
+                </div>
+                """
+            )
+
+        else:
+            st.info(
+                "No feature list is present in the metadata."
+            )
 
         info_line(
             (
-                "Every live estimate passes through "
-                "the saved preprocessing and estimator pipeline."
+                "Every live estimate passes through the saved "
+                "preprocessing and estimator pipeline."
             )
         )
 
 
 with provenance_column:
-    with st.container(
-        border=True,
-    ):
-        st.markdown(
-            "#### Training provenance"
-        )
+    with st.container(border=True):
+        st.subheader("Training provenance")
 
-        st.write(
-            "Random state: "
-            f"`{metadata.get('random_state', '—')}`"
-        )
+        provenance_rows = [
+            (
+                "Random state",
+                metadata.get(
+                    "random_state",
+                    "—",
+                ),
+            ),
+            (
+                "Dataset file",
+                metadata.get(
+                    "dataset_file",
+                    "—",
+                ),
+            ),
+            (
+                "Trained UTC",
+                metadata.get(
+                    "trained_at_utc",
+                    "—",
+                ),
+            ),
+        ]
 
-        st.write(
-            "Dataset file: "
-            f"`{metadata.get('dataset_file', '—')}`"
-        )
+        for label, value in provenance_rows:
+            render_html(
+                f"""
+                <div class="info-line">
+                    <span class="info-icon">
+                        ✓
+                    </span>
 
-        st.write(
-            "Trained UTC: "
-            f"`{metadata.get('trained_at_utc', '—')}`"
-        )
-
-        st.caption(
-            metadata.get(
-                "dataset_note",
-                "",
+                    <span>
+                        <strong>
+                            {html.escape(str(label))}
+                        </strong>
+                        ·
+                        {html.escape(str(value))}
+                    </span>
+                </div>
+                """
             )
+
+        dataset_note = metadata.get(
+            "dataset_note",
+            "",
         )
 
+        if dataset_note:
+            st.caption(dataset_note)
 
-st.markdown(
+
+# ---------------------------------------------------------------------
+# FOOTER
+# ---------------------------------------------------------------------
+
+render_html(
     """
     <div class="app-footer">
-        Model Observatory · metrics are read directly
-        from production metadata
+        Model Observatory · Metrics loaded directly from
+        production training metadata
     </div>
-    """,
-    unsafe_allow_html=True,
+    """
 )
